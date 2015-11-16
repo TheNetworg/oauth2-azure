@@ -96,7 +96,7 @@ class Azure extends AbstractProvider {
     
     private function wrapResponse($response) {
         if(empty($response)) return null;
-		else if(isset($response['value'])) return $response->value;
+		else if(isset($response['value'])) return $response['value'];
 		else return $response;
     }
     
