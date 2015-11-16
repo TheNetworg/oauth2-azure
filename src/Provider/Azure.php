@@ -24,9 +24,9 @@ class Azure extends AbstractProvider {
     }
 	
     protected function checkResponse(ResponseInterface $response, $data) {
-        if(isset($data->{'odata.error'})) {
+        if(isset($data['odata.error'])) {
             throw new IdentityProviderException(
-                (isset($data->{'odata.error'}->message) ? $data->{'odata.error'}->message : $response->getReasonPhrase()),
+                (isset($data['odata.error']['message']) ? $data['odata.error']['message'] : $response->getReasonPhrase()),
                 $response->getStatusCode(),
                 $response
             );
@@ -52,8 +52,8 @@ class Azure extends AbstractProvider {
 			foreach($values as $value) {
 				$objects[] = $value;
 			}
-			if(isset($response->{'odata.nextLink'})) {
-				$nextLink = $response->{'odata.nextLink'};
+			if(isset($response['odata.nextLink'])) {
+				$nextLink = $response['odata.nextLink'];
 				return $this->getObjects($tenant, $nextLink, $objects, $accessToken);
 			}
 			else {
@@ -96,7 +96,7 @@ class Azure extends AbstractProvider {
     
     private function wrapResponse($response) {
         if(empty($response)) return null;
-		else if(isset($response->value)) return $response->value;
+		else if(isset($response['value'])) return $response->value;
 		else return $response;
     }
     
