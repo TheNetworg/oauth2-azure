@@ -86,12 +86,10 @@ class Azure extends AbstractProvider {
         $url = $this->urlAPI.$ref;
         
         $url .= (strrpos($url, "?") === FALSE) ? "?" : "&";
-		$url .= "api-version=".$this->API_VERSION;
+        $url .= "api-version=".$this->API_VERSION;
         
         $request = $this->getAuthenticatedRequest($method, $url, $accessToken, $options);
         $response = $this->getResponse($request);
-        
-        $response = json_decode(json_encode($response));
         
         return $response;
     }
