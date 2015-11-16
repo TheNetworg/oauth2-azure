@@ -12,7 +12,7 @@ class AzureResourceOwner implements ResourceOwnerInterface
     }
 	
     public function getId() {
-        return $this->response->objectId ?: null;
+        return $this->response['objectId'] ?: null;
     }
 }
 
