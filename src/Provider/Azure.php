@@ -1,4 +1,5 @@
 <?php
+
 namespace TheNetworg\OAuth2\Client\Provider;
 
 use League\OAuth2\Client\Provider\AbstractProvider;
@@ -7,100 +8,140 @@ use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
 use League\OAuth2\Client\Token\AccessToken;
 use Psr\Http\Message\ResponseInterface;
 
-class Azure extends AbstractProvider {
+class Azure extends AbstractProvider
+{
     use BearerAuthorizationTrait;
-    
-	public $urlLogin = "https://login.microsoftonline.com/";
+
+    public $urlLogin = "https://login.microsoftonline.com/";
+
     public $tenant = "common";
-	public $urlAPI = "https://graph.windows.net/";
-	public $API_VERSION = "1.6";
-	
-    public function getBaseAuthorizationUrl() {
+
+    public $urlAPI = "https://graph.windows.net/";
+
+    public $API_VERSION = "1.6";
+
+    public function getBaseAuthorizationUrl()
+    {
         return $this->urlLogin.$this->tenant."/oauth2/authorize";
     }
-	
-    public function getBaseAccessTokenUrl(array $params) {
+
+    public function getBaseAccessTokenUrl(array $params)
+    {
         return $this->urlLogin.$this->tenant."/oauth2/token";
     }
-	
-    protected function checkResponse(ResponseInterface $response, $data) {
-        if(isset($data['odata.error'])) {
+
+    protected function checkResponse(ResponseInterface $response, $data)
+    {
+        if (isset($data['odata.error'])) {
+            if (isset($data['odata.error']['message'])) {
+                $message = $data['odata.error']['message'];
+            } else {
+                $message = $response->getReasonPhrase();
+            }
+
             throw new IdentityProviderException(
-                (isset($data['odata.error']['message']) ? $data['odata.error']['message'] : $response->getReasonPhrase()),
+                $message,
                 $response->getStatusCode(),
                 $response
             );
         }
     }
-	
-    protected function getDefaultScopes() {
+
+    protected function getDefaultScopes()
+    {
         return [];
     }
-    
-    protected function createResourceOwner(array $response, AccessToken $token) {
+
+    protected function createResourceOwner(array $response, AccessToken $token)
+    {
         return new AzureResourceOwner($response);
     }
-	
-    public function getResourceOwnerDetailsUrl(AccessToken $token) {
+
+    public function getResourceOwnerDetailsUrl(AccessToken $token)
+    {
         return "me";
     }
-	
-    public function getObjects($tenant, $ref, $objects = [], $accessToken) {
+
+    public function getObjects($tenant, $ref, $accessToken, $objects = [])
+    {
         $response = $this->request('GET', $tenant."/".$ref, $accessToken, []);
-		if($response) {
-			$values = $response->value;
-			foreach($values as $value) {
-				$objects[] = $value;
-			}
-			if(isset($response['odata.nextLink'])) {
-				$nextLink = $response['odata.nextLink'];
-				return $this->getObjects($tenant, $nextLink, $objects, $accessToken);
-			}
-			else {
-				return $objects;
-			}
-		}
+
+        if ($response) {
+            $values = $response->value;
+            foreach ($values as $value) {
+                $objects[] = $value;
+            }
+            if (isset($response['odata.nextLink'])) {
+                $nextLink = $response['odata.nextLink'];
+
+                return $this->getObjects($tenant, $nextLink, $accessToken, $objects);
+            } else {
+                return $objects;
+            }
+        }
     }
-	public function get($ref, $accessToken) {
+
+    public function get($ref, $accessToken)
+    {
         $response = $this->request('get', $ref, $accessToken);
+
         return $this->wrapResponse($response);
     }
-    public function post($ref, $body, $accessToken) {
+
+    public function post($ref, $body, $accessToken)
+    {
         $response = $this->request('post', $ref, $accessToken, ['body' => $body]);
+
         return $this->wrapResponse($response);
     }
-    public function put($ref, $body, $accessToken) {
+
+    public function put($ref, $body, $accessToken)
+    {
         $response = $this->request('put', $ref, $accessToken, ['body' => $body]);
+
         return $this->wrapResponse($response);
     }
-    public function delete($ref, $accessToken) {
+
+    public function delete($ref, $accessToken)
+    {
         $response = $this->request('delete', $ref, $accessToken);
+
         return $this->wrapResponse($response);
     }
-    public function patch($ref, $body, $accessToken) {
+
+    public function patch($ref, $body, $accessToken)
+    {
         $response = $this->request('patch', $ref, $accessToken, ['body' => $body]);
+
         return $this->wrapResponse($response);
     }
-    
-    private function request($method, $ref, $accessToken, $options = []) {
+
+    private function request($method, $ref, $accessToken, $options = [])
+    {
         $url = $this->urlAPI.$ref;
-        
-        $url .= (strrpos($url, "?") === FALSE) ? "?" : "&";
+
+        $url .= (strrpos($url, "?") === false) ? "?" : "&";
         $url .= "api-version=".$this->API_VERSION;
-        
+
         $request = $this->getAuthenticatedRequest($method, $url, $accessToken, $options);
         $response = $this->getResponse($request);
-        
+
         return $response;
     }
-    
-    private function wrapResponse($response) {
-        if(empty($response)) return null;
-		else if(isset($response['value'])) return $response['value'];
-		else return $response;
+
+    private function wrapResponse($response)
+    {
+        if (empty($response)) {
+            return null;
+        } elseif (isset($response['value'])) {
+            return $response['value'];
+        }
+
+        return $response;
     }
-    
-    public function getClientId() {
+
+    public function getClientId()
+    {
         return $this->clientId;
     }
 }

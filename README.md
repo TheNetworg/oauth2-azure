@@ -84,9 +84,9 @@ This library also provides easy interface to make it easier to interact with [Az
 - `put($ref, $body, $accessToken)`
 - `delete($ref, $body, $accessToken)`
 - `patch($ref, $body, $accessToken)`
-- `getObjects($tenant, $ref, $objects = [], $accessToken)` This is used for example for listing large amount of data - where you need to list all users for example - it automatically follows `odata.nextLink` until the end.
+- `getObjects($tenant, $ref, $accessToken, $objects = [])` This is used for example for listing large amount of data - where you need to list all users for example - it automatically follows `odata.nextLink` until the end.
   - `$tenant` tenant has to be provided since the `odata.nextLink` doesn't contain it.
-  - `$objects` should be either an empty array or a set of data which will be included in the results 
+  - `$objects` should be either an empty array or a set of data which will be included in the results
 
 *Please not that if you need to create a custom request, the method getAuthenticatedRequest and getResponse can still be used*
 
