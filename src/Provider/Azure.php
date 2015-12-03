@@ -34,7 +34,7 @@ class Azure extends AbstractProvider
     {
         if (isset($data['odata.error'])) {
             if (isset($data['odata.error']['message'])) {
-                $message = $data['odata.error']['message'];
+                $message = $data['odata.error']['message']['value'];
             } else {
                 $message = $response->getReasonPhrase();
             }
