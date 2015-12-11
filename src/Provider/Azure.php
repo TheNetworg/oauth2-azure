@@ -67,7 +67,7 @@ class Azure extends AbstractProvider
         $response = $this->request('GET', $tenant."/".$ref, $accessToken, []);
 
         if ($response) {
-            $values = $response->value;
+            $values = $response['value'];
             foreach ($values as $value) {
                 $objects[] = $value;
             }
