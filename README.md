@@ -95,6 +95,13 @@ This library also provides easy interface to make it easier to interact with [Az
 - `$body` The contents of the request, for example an object or so, it will be automatically converted to JSON
 - `$accessToken` The access token object obtained by using `getAccessToken` method
 
+## Microsoft Graph
+Calling [Microsoft Graph](http://graph.microsoft.io/) is very simple with this library. After provider initialization simply change the API URL followingly (replace `v1.0` with your desired version):
+```php
+$app->OAuth2->provider->urlAPI = "https://graph.microsoft.com/v1.0/";
+```
+After that, when requesting access token, refresh token or so, provide the `resource` with value `https://graph.microsoft.com/` in order to be able to make calls to the Graph (see more about `resource` [here](#advanced-flow)).
+
 ## Known users
 If you are using this library and would like to be listed here, please let us know!
 - [TheNetworg/DreamSpark-SSO](https://github.com/thenetworg/dreamspark-sso)
