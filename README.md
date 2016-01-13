@@ -79,12 +79,12 @@ The [Authorization Code Grant Flow](https://msdn.microsoft.com/en-us/library/azu
 
 This library also provides easy interface to make it easier to interact with [Azure Graph API](https://msdn.microsoft.com/en-us/library/azure/hh974476.aspx), the following methods are available on `provider` object:
 
-- `get($ref, $accessToken)`
-- `post($ref, $body, $accessToken)`
-- `put($ref, $body, $accessToken)`
-- `delete($ref, $body, $accessToken)`
-- `patch($ref, $body, $accessToken)`
-- `getObjects($tenant, $ref, $accessToken, $objects = [])` This is used for example for listing large amount of data - where you need to list all users for example - it automatically follows `odata.nextLink` until the end.
+- `get($ref, $accessToken, $headers = [])`
+- `post($ref, $body, $accessToken, $headers = [])`
+- `put($ref, $body, $accessToken, $headers = [])`
+- `delete($ref, $body, $accessToken, $headers = [])`
+- `patch($ref, $body, $accessToken, $headers = [])`
+- `getObjects($tenant, $ref, $accessToken, $objects = [], $headers = [])` This is used for example for listing large amount of data - where you need to list all users for example - it automatically follows `odata.nextLink` until the end.
   - `$tenant` tenant has to be provided since the `odata.nextLink` doesn't contain it.
   - `$objects` should be either an empty array or a set of data which will be included in the results
 
@@ -92,8 +92,9 @@ This library also provides easy interface to make it easier to interact with [Az
 
 ### Variables
 - `$ref` The URL reference without the leading `/`, for example `myOrganization/groups`
-- `$body` The contents of the request, for example an object or so, it will be automatically converted to JSON
+- `$body` The contents of the request, make has to be either string (so make sure to use `json_encode` to encode the request)s or stream (see [Guzzle HTTP](http://docs.guzzlephp.org/en/latest/request-options.html#body))
 - `$accessToken` The access token object obtained by using `getAccessToken` method
+- `$headers` Ability to set custom headers for the request (see [Guzzle HTTP](http://docs.guzzlephp.org/en/latest/request-options.html#headers))
 
 ## Microsoft Graph
 Calling [Microsoft Graph](http://graph.microsoft.io/) is very simple with this library. After provider initialization simply change the API URL followingly (replace `v1.0` with your desired version):

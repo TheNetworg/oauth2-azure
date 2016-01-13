@@ -62,9 +62,9 @@ class Azure extends AbstractProvider
         return "me";
     }
 
-    public function getObjects($tenant, $ref, $accessToken, $objects = [])
+    public function getObjects($tenant, $ref, $accessToken, $objects = [], $headers = [])
     {
-        $response = $this->request('GET', $tenant."/".$ref, $accessToken, []);
+        $response = $this->request('GET', $tenant."/".$ref, $accessToken, ['headers' => $headers]);
 
         if ($response) {
             $values = $response['value'];
@@ -74,44 +74,44 @@ class Azure extends AbstractProvider
             if (isset($response['odata.nextLink'])) {
                 $nextLink = $response['odata.nextLink'];
 
-                return $this->getObjects($tenant, $nextLink, $accessToken, $objects);
+                return $this->getObjects($tenant, $nextLink, $accessToken, $objects, $headers);
             } else {
                 return $objects;
             }
         }
     }
 
-    public function get($ref, $accessToken)
+    public function get($ref, $accessToken, $headers = [])
     {
-        $response = $this->request('get', $ref, $accessToken);
+        $response = $this->request('get', $ref, $accessToken, ['headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
 
-    public function post($ref, $body, $accessToken)
+    public function post($ref, $body, $accessToken, $headers = [])
     {
-        $response = $this->request('post', $ref, $accessToken, ['body' => $body]);
+        $response = $this->request('post', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
 
-    public function put($ref, $body, $accessToken)
+    public function put($ref, $body, $accessToken, $headers = [])
     {
-        $response = $this->request('put', $ref, $accessToken, ['body' => $body]);
+        $response = $this->request('put', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
 
-    public function delete($ref, $accessToken)
+    public function delete($ref, $accessToken, $headers = [])
     {
-        $response = $this->request('delete', $ref, $accessToken);
+        $response = $this->request('delete', $ref, $accessToken, ['headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
 
-    public function patch($ref, $body, $accessToken)
+    public function patch($ref, $body, $accessToken, $headers = [])
     {
-        $response = $this->request('patch', $ref, $accessToken, ['body' => $body]);
+        $response = $this->request('patch', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
@@ -122,6 +122,10 @@ class Azure extends AbstractProvider
 
         $url .= (strrpos($url, "?") === false) ? "?" : "&";
         $url .= "api-version=".$this->API_VERSION;
+        
+        if(!isset($options['headers']['Content-Type']) && isset($options['body'])) {
+            $options['headers']['Content-Type'] = 'application/json';
+        }
 
         $request = $this->getAuthenticatedRequest($method, $url, $accessToken, $options);
         $response = $this->getResponse($request);
