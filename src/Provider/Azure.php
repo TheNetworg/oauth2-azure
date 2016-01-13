@@ -123,6 +123,9 @@ class Azure extends AbstractProvider
         $url .= (strrpos($url, "?") === false) ? "?" : "&";
         $url .= "api-version=".$this->API_VERSION;
         
+        if(isset($options['body']) && (gettype($options['body']) == 'array' || gettype($options['body']) == 'object')) {
+            $options['body'] = json_encode($options['body']);
+        }
         if(!isset($options['headers']['Content-Type']) && isset($options['body'])) {
             $options['headers']['Content-Type'] = 'application/json';
         }
