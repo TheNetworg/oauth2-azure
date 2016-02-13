@@ -79,7 +79,7 @@ The [Authorization Code Grant Flow](https://msdn.microsoft.com/en-us/library/azu
 With [oauth2-client](https://github.com/thephpleague/oauth2-client) of version 1.3.0 and higher, it is now possible to specify custom parameters for the authorization URL, so you can now make use of options like `prompt`, `login_hint` and similar. See the following example of obtaining an authorization URL which will force the user to reauthenticate:
 ```php
 $authUrl = $provider->getAuthorizationUrl([
-    'prompt' => 'consent'
+    'prompt' => 'login'
 ]);
 ```
 You can find additional parameters [here](https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx).
