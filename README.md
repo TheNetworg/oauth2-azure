@@ -1,6 +1,5 @@
 # Azure Active Directory Provider for OAuth 2.0 Client
 [![Latest Version](https://img.shields.io/github/release/thenetworg/oauth2-azure.svg?style=flat-square)](https://github.com/thenetworg/oauth2-azure/releases)
-[![Latest Unstable Version](https://img.shields.io/packagist/vpre/thenetworg/oauth2-azure.svg?label=pre-release&style=flat-square)](https://packagist.org/packages/thenetworg/oauth2-azure)
 [![Total Downloads](https://img.shields.io/packagist/dt/thenetworg/oauth2-azure.svg?style=flat-square)](https://packagist.org/packages/thenetworg/oauth2-azure)
 [![Software License](https://img.shields.io/packagist/l/thenetworg/oauth2-azure.svg?style=flat-square)](LICENSE.md)
 
@@ -74,6 +73,16 @@ if (!isset($_GET['code'])) {
 #### Advanced flow
 
 The [Authorization Code Grant Flow](https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx) is a little bit different for Azure Active Directory. Instead of scopes, you specify the resource which you would like to access - see the above example where `resource` is specified when obtaining access token from the code.
+
+#### Using custom parameters
+
+With [oauth2-client](https://github.com/thephpleague/oauth2-client) of version 1.3.0 and higher, it is now possible to specify custom parameters for the authorization URL, so you can now make use of options like `prompt`, `login_hint` and similar. See the following example of obtaining an authorization URL which will force the user to reauthenticate:
+```php
+$authUrl = $provider->getAuthorizationUrl([
+    'prompt' => 'consent'
+]);
+```
+You can find additional parameters [here](https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx).
 
 ## Making API Requests
 
