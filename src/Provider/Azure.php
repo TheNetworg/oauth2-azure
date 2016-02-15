@@ -32,9 +32,11 @@ class Azure extends AbstractProvider
 
     protected function checkResponse(ResponseInterface $response, $data)
     {
-        if (isset($data['odata.error'])) {
-            if (isset($data['odata.error']['message'])) {
+        if (isset($data['odata.error']) || isset($data['error'])) {
+            if (isset($data['odata.error']['message']['value'])) {
                 $message = $data['odata.error']['message']['value'];
+            } elseif (isset($data['error']['message'])) {
+                $message = $data['error']['message'];
             } else {
                 $message = $response->getReasonPhrase();
             }
@@ -71,13 +73,15 @@ class Azure extends AbstractProvider
             foreach ($values as $value) {
                 $objects[] = $value;
             }
+            
             if (isset($response['odata.nextLink'])) {
                 $nextLink = $response['odata.nextLink'];
-
-                return $this->getObjects($tenant, $nextLink, $accessToken, $objects, $headers);
+            } elseif (isset($response['@odata.nextLink'])) {
+                $nextLink = $response['@odata.nextLink'];
             } else {
                 return $objects;
             }
+            return $this->getObjects($tenant, $nextLink, $accessToken, $objects);
         }
     }
 
@@ -118,10 +122,14 @@ class Azure extends AbstractProvider
 
     private function request($method, $ref, $accessToken, $options = [])
     {
-        $url = $this->urlAPI.$ref;
-
-        $url .= (strrpos($url, "?") === false) ? "?" : "&";
-        $url .= "api-version=".$this->API_VERSION;
+        $url = null;
+        if (filter_var($ref, FILTER_VALIDATE_URL) !== FALSE) {
+            $url = $ref;
+        } else {
+            $url = $this->urlAPI.$ref;
+            $url .= (strrpos($url, "?") === false) ? "?" : "&";
+            $url .= "api-version=".$this->API_VERSION;
+        }
         
         if(isset($options['body']) && (gettype($options['body']) == 'array' || gettype($options['body']) == 'object')) {
             $options['body'] = json_encode($options['body']);
