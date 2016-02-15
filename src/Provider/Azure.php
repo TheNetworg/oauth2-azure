@@ -66,7 +66,10 @@ class Azure extends AbstractProvider
 
     public function getObjects($tenant, $ref, $accessToken, $objects = [], $headers = [])
     {
-        $response = $this->request('GET', $tenant."/".$ref, $accessToken, ['headers' => $headers]);
+        if (filter_var($ref, FILTER_VALIDATE_URL) === FALSE) {
+            $ref = $tenant."/".$ref;
+        }
+        $response = $this->request('GET', $ref, $accessToken, ['headers' => $headers]);
 
         if ($response) {
             $values = $response['value'];
