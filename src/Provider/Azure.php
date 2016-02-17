@@ -64,7 +64,7 @@ class Azure extends AbstractProvider
         return "me";
     }
 
-    public function getObjects($tenant, $ref, $accessToken, $objects = [], $headers = [])
+    public function getObjects($tenant, $ref, &$accessToken, $objects = [], $headers = [])
     {
         if (filter_var($ref, FILTER_VALIDATE_URL) === FALSE) {
             $ref = $tenant."/".$ref;
@@ -88,43 +88,50 @@ class Azure extends AbstractProvider
         }
     }
 
-    public function get($ref, $accessToken, $headers = [])
+    public function get($ref, &$accessToken, $headers = [])
     {
         $response = $this->request('get', $ref, $accessToken, ['headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
 
-    public function post($ref, $body, $accessToken, $headers = [])
+    public function post($ref, $body, &$accessToken, $headers = [])
     {
         $response = $this->request('post', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
 
-    public function put($ref, $body, $accessToken, $headers = [])
+    public function put($ref, $body, &$accessToken, $headers = [])
     {
         $response = $this->request('put', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
 
-    public function delete($ref, $accessToken, $headers = [])
+    public function delete($ref, &$accessToken, $headers = [])
     {
         $response = $this->request('delete', $ref, $accessToken, ['headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
 
-    public function patch($ref, $body, $accessToken, $headers = [])
+    public function patch($ref, $body, &$accessToken, $headers = [])
     {
         $response = $this->request('patch', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
 
-    private function request($method, $ref, $accessToken, $options = [])
+    private function request($method, $ref, &$accessToken, $options = [])
     {
+        if ($accessToken->hasExpired()) {
+            $accessToken = $app->OAuth2->provider->getAccessToken('refresh_token', [
+                'refresh_token' => $app->OAuth2->token->getRefreshToken(),
+                'resource' => $this->urlAPI
+            ]);
+        }
+        
         $url = null;
         if (filter_var($ref, FILTER_VALIDATE_URL) !== FALSE) {
             $url = $ref;
