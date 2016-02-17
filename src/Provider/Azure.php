@@ -13,6 +13,10 @@ class Azure extends AbstractProvider
     use BearerAuthorizationTrait;
 
     public $urlLogin = "https://login.microsoftonline.com/";
+    public $pathAuthorize = "/oauth2/authorize";
+    public $pathToken = "/oauth2/token";
+    
+    public $scope = [];
 
     public $tenant = "common";
 
@@ -22,12 +26,12 @@ class Azure extends AbstractProvider
 
     public function getBaseAuthorizationUrl()
     {
-        return $this->urlLogin.$this->tenant."/oauth2/authorize";
+        return $this->urlLogin.$this->tenant.$this->pathAuthorize;
     }
 
     public function getBaseAccessTokenUrl(array $params)
     {
-        return $this->urlLogin.$this->tenant."/oauth2/token";
+        return $this->urlLogin.$this->tenant.$this->pathToken;
     }
 
     protected function checkResponse(ResponseInterface $response, $data)
@@ -51,7 +55,7 @@ class Azure extends AbstractProvider
 
     protected function getDefaultScopes()
     {
-        return [];
+        return $this->scope;
     }
 
     protected function createResourceOwner(array $response, AccessToken $token)

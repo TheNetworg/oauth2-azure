@@ -86,7 +86,7 @@ You can find additional parameters [here](https://msdn.microsoft.com/en-us/libra
 
 ## Making API Requests
 
-This library also provides easy interface to make it easier to interact with [Azure Graph API](https://msdn.microsoft.com/en-us/library/azure/hh974476.aspx), the following methods are available on `provider` object:
+This library also provides easy interface to make it easier to interact with [Azure Graph API](https://msdn.microsoft.com/en-us/library/azure/hh974476.aspx) and [Microsoft Graph](http://graph.microsoft.io), the following methods are available on `provider` object (it also handles automatic token refresh flow should it be needed during making the request):
 
 - `get($ref, $accessToken, $headers = [])`
 - `post($ref, $body, $accessToken, $headers = [])`
@@ -97,7 +97,7 @@ This library also provides easy interface to make it easier to interact with [Az
   - `$tenant` tenant has to be provided since the `odata.nextLink` doesn't contain it.
   - `$objects` should be either an empty array or a set of data which will be included in the results
 
-*Please not that if you need to create a custom request, the method getAuthenticatedRequest and getResponse can still be used*
+*Please note that if you need to create a custom request, the method getAuthenticatedRequest and getResponse can still be used.*
 
 ### Variables
 - `$ref` The URL reference without the leading `/`, for example `myOrganization/groups`
@@ -108,9 +108,22 @@ This library also provides easy interface to make it easier to interact with [Az
 ## Microsoft Graph
 Calling [Microsoft Graph](http://graph.microsoft.io/) is very simple with this library. After provider initialization simply change the API URL followingly (replace `v1.0` with your desired version):
 ```php
-$app->OAuth2->provider->urlAPI = "https://graph.microsoft.com/v1.0/";
+$provider->urlAPI = "https://graph.microsoft.com/v1.0/";
 ```
 After that, when requesting access token, refresh token or so, provide the `resource` with value `https://graph.microsoft.com/` in order to be able to make calls to the Graph (see more about `resource` [here](#advanced-flow)).
+
+## Azure Active Directory B2C - *experimental*
+You can also now very simply make use of [Azure Active Directory B2C](https://azure.microsoft.com/en-us/documentation/articles/active-directory-b2c-reference-oauth-code/). Before authentication, change the endpoints using `pathAuthorize`, `pathToken` and `scope` and additionally specify your [login policy](https://azure.microsoft.com/en-gb/documentation/articles/active-directory-b2c-reference-policies/). **Please note that the B2C support is still experimental and wasn't fully tested.**
+```php
+$provider->pathAuthorize = "/oauth2/v2.0/authorize";
+$provider->pathToken = "/oauth2/v2.0/token";
+$provider->scope = ["idtoken"];
+
+//specify custom policy in our authorization URL
+$authUrl = $provider->getAuthorizationUrl([
+    'p' => 'b2c_1_siup'
+]);
+```
 
 ## Known users
 If you are using this library and would like to be listed here, please let us know!
