@@ -5,8 +5,6 @@
 
 This package provides [Azure Active Directory](https://azure.microsoft.com/en-us/services/active-directory/) OAuth 2.0 support for the PHP League's [OAuth 2.0 Client](https://github.com/thephpleague/oauth2-client).
 
-> The latest release of this package is specifically designed to support Azure Active Directory OAuth 2.0 support when using the OAuth 2.0 Client ~1.0.
-
 ## Installation
 
 To install, use composer:
@@ -104,6 +102,22 @@ This library also provides easy interface to make it easier to interact with [Az
 - `$body` The contents of the request, make has to be either string (so make sure to use `json_encode` to encode the request)s or stream (see [Guzzle HTTP](http://docs.guzzlephp.org/en/latest/request-options.html#body))
 - `$accessToken` The access token object obtained by using `getAccessToken` method
 - `$headers` Ability to set custom headers for the request (see [Guzzle HTTP](http://docs.guzzlephp.org/en/latest/request-options.html#headers))
+
+## Resource Owner
+With version 1.1.0 and onward, the Resource Owner information is parsed from the JWT passed in `access_token` by Azure Active Directory. It exposes few attributes and one function.
+
+**Example:**
+```php
+$resourceOwner = $provider->getResourceOwner($token);
+echo 'Hello, '.$resourceOwner->getFirstName().'!';
+```
+The exposed attributes and function are:
+- `getId()` - Gets user's object id - unique for each user
+- `getFirstName()` - Gets user's first name
+- `getLastName()` - Gets user's family name/surname
+- `getTenantId()` - Gets id of tenant which the user is member of
+- `getUpn()` - Gets user's User Principal Name, which can be also used as user's e-mail address
+- `getClaim($name)` - Gets any other claim (specified as `$name`) from the JWT, full list can be found [here](https://azure.microsoft.com/en-us/documentation/articles/active-directory-token-and-claims/)
 
 ## Microsoft Graph
 Calling [Microsoft Graph](http://graph.microsoft.io/) is very simple with this library. After provider initialization simply change the API URL followingly (replace `v1.0` with your desired version):
