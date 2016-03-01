@@ -175,16 +175,19 @@ class Azure extends AbstractProvider
                 'resource' => $this->urlAPI
             ]);
         }
-        
+
         $url = null;
         if (filter_var($ref, FILTER_VALIDATE_URL) !== FALSE) {
             $url = $ref;
         } else {
             $url = $this->urlAPI.$ref;
-            $url .= (strrpos($url, "?") === false) ? "?" : "&";
-            $url .= "api-version=".$this->API_VERSION;
+
+            if (strpos($this->urlAPI, "graph.microsoft.com") === FALSE) {
+                $url .= (strrpos($url, "?") === false) ? "?" : "&";
+                $url .= "api-version=".$this->API_VERSION;
+            }
         }
-        
+
         if(isset($options['body']) && (gettype($options['body']) == 'array' || gettype($options['body']) == 'object')) {
             $options['body'] = json_encode($options['body']);
         }
