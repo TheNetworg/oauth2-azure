@@ -160,8 +160,8 @@ $authUrl = $provider->getAuthorizationUrl([
 ## Multipurpose refresh tokens - *experimental*
 In cause that you need to access multiple resources (like your API and Microsoft Graph), you can use multipurpose [refresh tokens](https://msdn.microsoft.com/en-us/library/azure/dn645538.aspx). Once obtaining a token for first resource, you can simply request another token for different resource like so:
 ```php
-$accessToken2 = $app->OAuth2->provider->getAccessToken('refresh_token', [
-    'refresh_token' => $token->getRefreshToken(),
+$accessToken2 = $provider->getAccessToken('refresh_token', [
+    'refresh_token' => $accessToken1->getRefreshToken(),
     'resource' => 'http://urlOfYourSecondResource'
 ]);
 ```
