@@ -5,6 +5,24 @@
 
 This package provides [Azure Active Directory](https://azure.microsoft.com/en-us/services/active-directory/) OAuth 2.0 support for the PHP League's [OAuth 2.0 Client](https://github.com/thephpleague/oauth2-client).
 
+## Table of Contents
+- [Installation](#installation)
+- [Usage](#usage)
+    - [Authorization Code Flow](#authorization-code-flow)
+        - [Advanced flow](#advanced-flow)
+        - [Using custom parameters](#using-custom-parameters)
+- [Making API Requests](#making-api-requests)
+    - [Variables](#variables)
+- [Resource Owner](#resource-owner)
+- [Microsoft Graph](#microsoft-graph)
+- [Azure Active Directory B2C - *experimental*](#azure-active-directory-b2c---experimental)
+- [Multipurpose refresh tokens - *experimental*](#multipurpose-refresh-tokens---experimental)
+- [Known users](#known-users)
+- [Contributing](#contributing)
+- [Credits](#credits)
+- [Support](#support)
+- [License](#license)
+
 ## Installation
 
 To install, use composer:
