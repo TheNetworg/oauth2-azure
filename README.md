@@ -135,7 +135,7 @@ The exposed attributes and function are:
 - `getLastName()` - Gets user's family name/surname
 - `getTenantId()` - Gets id of tenant which the user is member of
 - `getUpn()` - Gets user's User Principal Name, which can be also used as user's e-mail address
-- `getClaim($name)` - Gets any other claim (specified as `$name`) from the JWT, full list can be found [here](https://azure.microsoft.com/en-us/documentation/articles/active-directory-token-and-claims/)
+- `claim($name)` - Gets any other claim (specified as `$name`) from the JWT, full list can be found [here](https://azure.microsoft.com/en-us/documentation/articles/active-directory-token-and-claims/)
 
 ## Microsoft Graph
 Calling [Microsoft Graph](http://graph.microsoft.io/) is very simple with this library. After provider initialization simply change the API URL followingly (replace `v1.0` with your desired version):
