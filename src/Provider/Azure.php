@@ -5,9 +5,8 @@ namespace TheNetworg\OAuth2\Client\Provider;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
-use League\OAuth2\Client\Token\AccessToken;
+use TheNetworg\OAuth2\Client\Token\AccessToken;
 use Psr\Http\Message\ResponseInterface;
-use \Firebase\JWT\JWT;
 
 class Azure extends AbstractProvider
 {
@@ -59,43 +58,10 @@ class Azure extends AbstractProvider
         return $this->scope;
     }
     
-    /**
-     * Get JWT verification keys from Azure Active Directory.
-     *
-     * @return array
-     */
-    private function getJwtVerificationKeys()
-    {
-        $factory = $this->getRequestFactory();
-        $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/common/discovery/keys', []);
-        
-        $response = $this->getResponse($request);
-        
-        $keys = [];
-        foreach ($response['keys'] as $i => $keyinfo) {
-            if (isset($keyinfo['x5c']) && is_array($keyinfo['x5c'])) {
-                foreach ($keyinfo['x5c'] as $encodedkey) {
-                    $key = "-----BEGIN CERTIFICATE-----\n";
-                    $key .= wordwrap($encodedkey, 64, "\n", true);
-                    $key .= "\n-----END CERTIFICATE-----";
-                    $keys[$keyinfo['kid']] = $key;
-                }
-            }
-        }
-        
-        return $keys;
-    }
-    
     public function getResourceOwner(AccessToken $token)
     {
-        $jwt = (string) $token;
-        try {
-            $keys = $this->getJwtVerificationKeys();
-            $values = (array)JWT::decode($token, $keys, ['RS256']);
-        }  catch (JWT_Exception $e) {
-            $values = [];
-        }
-        return $this->createResourceOwner($values, $token);
+        $data = $token->getIdTokenParsed();
+        return $this->createResourceOwner($data, $token);
     }
     
     public function getResourceOwnerDetailsUrl(AccessToken $token)
@@ -211,7 +177,7 @@ class Azure extends AbstractProvider
 
         return $response;
     }
-
+    
     public function getClientId()
     {
         return $this->clientId;
