@@ -5,6 +5,7 @@ namespace TheNetworg\OAuth2\Client\Provider;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
+use League\OAuth2\Client\Grant\AbstractGrant;
 use TheNetworg\OAuth2\Client\Token\AccessToken;
 use Psr\Http\Message\ResponseInterface;
 
@@ -58,18 +59,23 @@ class Azure extends AbstractProvider
         return $this->scope;
     }
     
-    public function getResourceOwner(AccessToken $token)
+    protected function createAccessToken(array $response, AbstractGrant $grant)
+    {
+        return new AccessToken($response, $this);
+    }
+    
+    public function getResourceOwner(\League\OAuth2\Client\Token\AccessToken $token)
     {
         $data = $token->getIdTokenParsed();
         return $this->createResourceOwner($data, $token);
     }
     
-    public function getResourceOwnerDetailsUrl(AccessToken $token)
+    public function getResourceOwnerDetailsUrl(\League\OAuth2\Client\Token\AccessToken $token)
     {
         return null;
     }
 
-    protected function createResourceOwner(array $response, AccessToken $token)
+    protected function createResourceOwner(array $response, \League\OAuth2\Client\Token\AccessToken $token)
     {
         return new AzureResourceOwner($response);
     }

@@ -4,9 +4,10 @@ namespace TheNetworg\OAuth2\Client\Token;
 
 use InvalidArgumentException;
 use RuntimeException;
+use League\OAuth2\Client\Tool\RequestFactory;
 use \Firebase\JWT\JWT;
 
-class AccessToken extends League\OAuth2\Client\Token\AccessToken
+class AccessToken extends \League\OAuth2\Client\Token\AccessToken
 {
     protected $idToken;
     protected $idTokenClaims;
@@ -18,7 +19,7 @@ class AccessToken extends League\OAuth2\Client\Token\AccessToken
             $this->idToken = $options['id_token'];
             
             $jwt = $this->accessToken;
-            $keys = $this->getJwtVerificationKeys();
+            $keys = $this->getJwtVerificationKeys($provider);
             
             try {
                 $idTokenClaims = (array)JWT::decode($jwt, $keys, ['RS256']);
@@ -26,23 +27,29 @@ class AccessToken extends League\OAuth2\Client\Token\AccessToken
                 throw new RuntimeException("Unable to parse the id_token!");
             }
             
-            if($provider->getClientId() != $idTokenClaims['aud']) {
-                throw new RuntimeException("Incorrect audience value!");
+            print_r($idTokenClaims);
+            
+            if($provider->getClientId() != $idTokenClaims['appid']) {
+                throw new RuntimeException("The token wasn't meant for this applicaiton!");
             }
             if($idTokenClaims['nbf'] > time() || $idTokenClaims['exp'] < time()) {
                 throw new RuntimeException("The id_token is invalid!");
             }
             
             if($provider->tenant == "common") {
+                $provider->tenant = $idTokenClaims['tid'];
                 
-            }
-            else {
-                $tenant = $this->getTenantDetails($this->tenant);
+                $tenant = $this->getTenantDetails($provider->tenant, $provider);
                 if($idTokenClaims['iss'] != $tenant['issuer']) {
                     throw new RuntimeException("Invalid token issuer!");
                 }
             }
-            //validate nonce
+            else {
+                $tenant = $this->getTenantDetails($provider->tenant, $provider);
+                if($idTokenClaims['iss'] != $tenant['issuer']) {
+                    throw new RuntimeException("Invalid token issuer!");
+                }
+            }
             
             $this->idTokenClaims = $idTokenClaims;
         }
@@ -53,12 +60,12 @@ class AccessToken extends League\OAuth2\Client\Token\AccessToken
      *
      * @return array
      */
-    private function getJwtVerificationKeys()
+    private function getJwtVerificationKeys($provider)
     {
-        $factory = $this->getRequestFactory();
+        $factory = $provider->getRequestFactory();
         $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/common/discovery/keys', []);
         
-        $response = $this->getResponse($request);
+        $response = $provider->getResponse($request);
         
         $keys = [];
         foreach ($response['keys'] as $i => $keyinfo) {
@@ -82,12 +89,12 @@ class AccessToken extends League\OAuth2\Client\Token\AccessToken
      *
      * @return array
      */
-    private function getTenantDetails($tenant)
+    private function getTenantDetails($tenant, $provider)
     {
-        $factory = $this->getRequestFactory();
+        $factory = $provider->getRequestFactory();
         $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/'.$tenant.'/.well-known/openid-configuration', []);
         
-        $response = $this->getResponse($request);
+        $response = $provider->getResponse($request);
         
         return $response;
     }
