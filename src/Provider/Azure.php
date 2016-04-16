@@ -66,7 +66,7 @@ class Azure extends AbstractProvider
     
     public function getResourceOwner(\League\OAuth2\Client\Token\AccessToken $token)
     {
-        $data = $token->getIdTokenParsed();
+        $data = $token->getIdTokenClaims();
         return $this->createResourceOwner($data, $token);
     }
     
