@@ -26,7 +26,6 @@ class AccessToken extends League\OAuth2\Client\Token\AccessToken
                 throw new RuntimeException("Unable to parse the id_token!");
             }
             
-            /*
             if($provider->getClientId() != $idTokenClaims['aud']) {
                 throw new RuntimeException("Incorrect audience value!");
             }
@@ -38,10 +37,11 @@ class AccessToken extends League\OAuth2\Client\Token\AccessToken
                 
             }
             else {
-                //get tenant id
-                //check if valid
+                $tenant = $this->getTenantDetails($this->tenant);
+                if($idTokenClaims['iss'] != $tenant['issuer']) {
+                    throw new RuntimeException("Invalid token issuer!");
+                }
             }
-            */
             //validate nonce
             
             $this->idTokenClaims = $idTokenClaims;
@@ -73,6 +73,23 @@ class AccessToken extends League\OAuth2\Client\Token\AccessToken
         }
         
         return $keys;
+    }
+    
+    /**
+     * Get the specified tenant's details.
+     *
+     * @param string $tenant
+     *
+     * @return array
+     */
+    private function getTenantDetails($tenant)
+    {
+        $factory = $this->getRequestFactory();
+        $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/'.$tenant.'/.well-known/openid-configuration', []);
+        
+        $response = $this->getResponse($request);
+        
+        return $response;
     }
     
     public function getIdTokenClaims()
