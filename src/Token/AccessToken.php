@@ -18,21 +18,29 @@ class AccessToken extends \League\OAuth2\Client\Token\AccessToken
         if (!empty($options['id_token'])) {
             $this->idToken = $options['id_token'];
             
-            $jwt = $this->accessToken;
             $keys = $this->getJwtVerificationKeys($provider);
-            
+            $idTokenClaims = null;
             try {
-                $idTokenClaims = (array)JWT::decode($jwt, $keys, ['RS256']);
+                $tks = explode('.', $this->idToken);
+                // Check if the id_token contains signature
+                if(count($tks) == 3 && !empty($tks[2])) {
+                    $idTokenClaims = (array)JWT::decode($this->idToken, $keys, ['RS256']);
+                }
+                else {
+                    // The id_token is unsigned (coming from v1.0 endpoint) - https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx
+                    // Validate the access_token signature first by parsing it as JWT into claims
+                    $accessTokenClaims = (array)JWT::decode($options['access_token'], $keys, ['RS256']);
+                    // Then parse the idToken claims only without validating the signature
+                    $idTokenClaims = (array)JWT::jsonDecode(JWT::urlsafeB64Decode($tks[1]));
+                }
             }  catch (JWT_Exception $e) {
                 throw new RuntimeException("Unable to parse the id_token!");
             }
-            
-            print_r($idTokenClaims);
-            
-            if($provider->getClientId() != $idTokenClaims['appid']) {
-                throw new RuntimeException("The token wasn't meant for this applicaiton!");
+            if($provider->getClientId() != $idTokenClaims['aud']) {
+                throw new RuntimeException("The audience is invalid!");
             }
             if($idTokenClaims['nbf'] > time() || $idTokenClaims['exp'] < time()) {
+                // Additional validation is being performed in firebase/JWT itself
                 throw new RuntimeException("The id_token is invalid!");
             }
             
