@@ -261,7 +261,7 @@ class Azure extends AbstractProvider
      *
      * @return array
      */
-    private function getTenantDetails($tenant)
+    public function getTenantDetails($tenant)
     {
         $factory = $this->getRequestFactory();
         $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/'.$tenant.'/.well-known/openid-configuration', []);
