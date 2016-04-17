@@ -15,6 +15,7 @@ This package provides [Azure Active Directory](https://azure.microsoft.com/en-us
     - [Variables](#variables)
 - [Resource Owner](#resource-owner)
 - [Microsoft Graph](#microsoft-graph)
+- [**NEW** - Protecting your API - *experimental*](#protecting-your-api---experimental)
 - [Azure Active Directory B2C - *experimental*](#azure-active-directory-b2c---experimental)
 - [Multipurpose refresh tokens - *experimental*](#multipurpose-refresh-tokens---experimental)
 - [Known users](#known-users)
@@ -144,6 +145,26 @@ $provider->urlAPI = "https://graph.microsoft.com/v1.0/";
 ```
 After that, when requesting access token, refresh token or so, provide the `resource` with value `https://graph.microsoft.com/` in order to be able to make calls to the Graph (see more about `resource` [here](#advanced-flow)).
 
+## Protecting your API - *experimental*
+With version 1.2.0 you can now use this library to protect your API with Azure Active Directory authentication very easily. The Provider now also exposes `validateAccessToken(string $token)` which lets you pass an access token inside which you for example received in the `Authorization` header of the request on your API. You can use the function followingly (in vanilla PHP):
+```php
+// Assuming you have already initialized the $provider
+
+// Obtain the accessToken - in this case, we are getting it from Authorization header
+$headers = getallheaders();
+$authorization = explode(' ', $headers['Authorization']);
+$accessToken = $authorization[1];
+
+try {
+    $claims = $provider->validateAccessToken($accessToken);
+} catch ($e) {
+    // Something happened, handle the error
+}
+
+// The access token is valid, you can now proceed with your code. You can also access the $claims as defined in JWT - for example roles, group memberships etc.
+```
+While doesn't doesn't allow you to request tokens for additional resources (`on_behalf_of`), I believe it is a good start. The support for such grant is going to be available in later release.
+
 ## Azure Active Directory B2C - *experimental*
 You can also now very simply make use of [Azure Active Directory B2C](https://azure.microsoft.com/en-us/documentation/articles/active-directory-b2c-reference-oauth-code/). Before authentication, change the endpoints using `pathAuthorize`, `pathToken` and `scope` and additionally specify your [login policy](https://azure.microsoft.com/en-gb/documentation/articles/active-directory-b2c-reference-policies/). **Please note that the B2C support is still experimental and wasn't fully tested.**
 ```php
@@ -151,7 +172,7 @@ $provider->pathAuthorize = "/oauth2/v2.0/authorize";
 $provider->pathToken = "/oauth2/v2.0/token";
 $provider->scope = ["idtoken"];
 
-//specify custom policy in our authorization URL
+// Specify custom policy in our authorization URL
 $authUrl = $provider->getAuthorizationUrl([
     'p' => 'b2c_1_siup'
 ]);

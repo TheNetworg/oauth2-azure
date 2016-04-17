@@ -18,7 +18,7 @@ class AccessToken extends \League\OAuth2\Client\Token\AccessToken
         if (!empty($options['id_token'])) {
             $this->idToken = $options['id_token'];
             
-            $keys = $this->getJwtVerificationKeys($provider);
+            $keys = $provider->getJwtVerificationKeys();
             $idTokenClaims = null;
             try {
                 $tks = explode('.', $this->idToken);
@@ -47,13 +47,13 @@ class AccessToken extends \League\OAuth2\Client\Token\AccessToken
             if($provider->tenant == "common") {
                 $provider->tenant = $idTokenClaims['tid'];
                 
-                $tenant = $this->getTenantDetails($provider->tenant, $provider);
+                $tenant = $provider->getTenantDetails($provider->tenant);
                 if($idTokenClaims['iss'] != $tenant['issuer']) {
                     throw new RuntimeException("Invalid token issuer!");
                 }
             }
             else {
-                $tenant = $this->getTenantDetails($provider->tenant, $provider);
+                $tenant = $provider->getTenantDetails($provider->tenant);
                 if($idTokenClaims['iss'] != $tenant['issuer']) {
                     throw new RuntimeException("Invalid token issuer!");
                 }
@@ -61,50 +61,6 @@ class AccessToken extends \League\OAuth2\Client\Token\AccessToken
             
             $this->idTokenClaims = $idTokenClaims;
         }
-    }
-    
-    /**
-     * Get JWT verification keys from Azure Active Directory.
-     *
-     * @return array
-     */
-    private function getJwtVerificationKeys($provider)
-    {
-        $factory = $provider->getRequestFactory();
-        $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/common/discovery/keys', []);
-        
-        $response = $provider->getResponse($request);
-        
-        $keys = [];
-        foreach ($response['keys'] as $i => $keyinfo) {
-            if (isset($keyinfo['x5c']) && is_array($keyinfo['x5c'])) {
-                foreach ($keyinfo['x5c'] as $encodedkey) {
-                    $key = "-----BEGIN CERTIFICATE-----\n";
-                    $key .= wordwrap($encodedkey, 64, "\n", true);
-                    $key .= "\n-----END CERTIFICATE-----";
-                    $keys[$keyinfo['kid']] = $key;
-                }
-            }
-        }
-        
-        return $keys;
-    }
-    
-    /**
-     * Get the specified tenant's details.
-     *
-     * @param string $tenant
-     *
-     * @return array
-     */
-    private function getTenantDetails($tenant, $provider)
-    {
-        $factory = $provider->getRequestFactory();
-        $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/'.$tenant.'/.well-known/openid-configuration', []);
-        
-        $response = $provider->getResponse($request);
-        
-        return $response;
     }
     
     public function getIdTokenClaims()

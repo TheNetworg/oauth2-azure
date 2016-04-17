@@ -188,4 +188,86 @@ class Azure extends AbstractProvider
     {
         return $this->clientId;
     }
+    
+    /**
+     * Validate the access token you received in your application.
+     *
+     * @input $accessToken string The access token you received in the authorization header.
+     *
+     * @return array
+     */
+    public function validateAccessToken(string $accessToken)
+    {
+        $keys = $this->getJwtVerificationKeys();
+        $tokenClaims = (array)JWT::decode($accessToken, $keys, ['RS256']);
+        
+        if($provider->getClientId() != $tokenClaims['aud']) {
+            throw new RuntimeException("The audience is invalid!");
+        }
+        if($tokenClaims['nbf'] > time() || $tokenClaims['exp'] < time()) {
+            // Additional validation is being performed in firebase/JWT itself
+            throw new RuntimeException("The id_token is invalid!");
+        }
+        
+        if($provider->tenant == "common") {
+            $provider->tenant = $tokenClaims['tid'];
+            
+            $tenant = $provider->getTenantDetails($provider->tenant);
+            if($tokenClaims['iss'] != $tenant['issuer']) {
+                throw new RuntimeException("Invalid token issuer!");
+            }
+        }
+        else {
+            $tenant = $provider->getTenantDetails($provider->tenant);
+            if($tokenClaims['iss'] != $tenant['issuer']) {
+                throw new RuntimeException("Invalid token issuer!");
+            }
+        }
+        
+        return $tokenClaims;
+    }
+    
+    /**
+     * Get JWT verification keys from Azure Active Directory.
+     *
+     * @return array
+     */
+    public function getJwtVerificationKeys()
+    {
+        $factory = $this->getRequestFactory();
+        $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/common/discovery/keys', []);
+        
+        $response = $this->getResponse($request);
+        
+        $keys = [];
+        foreach ($response['keys'] as $i => $keyinfo) {
+            if (isset($keyinfo['x5c']) && is_array($keyinfo['x5c'])) {
+                foreach ($keyinfo['x5c'] as $encodedkey) {
+                    $key = "-----BEGIN CERTIFICATE-----\n";
+                    $key .= wordwrap($encodedkey, 64, "\n", true);
+                    $key .= "\n-----END CERTIFICATE-----";
+                    $keys[$keyinfo['kid']] = $key;
+                }
+            }
+        }
+        
+        return $keys;
+    }
+    
+    /**
+     * Get the specified tenant's details.
+     *
+     * @param string $tenant
+     *
+     * @return array
+     */
+    private function getTenantDetails($tenant)
+    {
+        $factory = $this->getRequestFactory();
+        $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/'.$tenant.'/.well-known/openid-configuration', []);
+        
+        $response = $this->getResponse($request);
+        
+        return $response;
+    }
 }
