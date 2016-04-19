@@ -168,7 +168,7 @@ try {
 You may also need to access some other resource from the API like the Microsoft Graph to get some additional information. In order to do that, there is `urn:ietf:params:oauth:grant-type:jwt-bearer` grant available ([RFC](https://tools.ietf.org/html/draft-jones-oauth-jwt-bearer-03)). An example (assuming you have the code above working and you have the required permissions configured correctly in the Azure AD application):
 ```php
 $graphAccessToken = $provider->getAccessToken('jwt_bearer', [
-    'resource' => 'https://graph.microsoft.com/v1.0/"',
+    'resource' => 'https://graph.microsoft.com/v1.0/',
     'assertion' => $accessToken,
     'requested_token_use' => 'on_behalf_of'
 ]);
