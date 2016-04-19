@@ -158,7 +158,7 @@ $accessToken = $authorization[1];
 
 try {
     $claims = $provider->validateAccessToken($accessToken);
-} catch ($e) {
+} catch (Exception $e) {
     // Something happened, handle the error
 }
 

@@ -9,6 +9,7 @@ use League\OAuth2\Client\Grant\AbstractGrant;
 use TheNetworg\OAuth2\Client\Grant\JwtBearer;
 use TheNetworg\OAuth2\Client\Token\AccessToken;
 use Psr\Http\Message\ResponseInterface;
+use \Firebase\JWT\JWT;
 
 class Azure extends AbstractProvider
 {
@@ -203,7 +204,7 @@ class Azure extends AbstractProvider
      *
      * @return array
      */
-    public function validateAccessToken(string $accessToken)
+    public function validateAccessToken($accessToken)
     {
         $keys = $this->getJwtVerificationKeys();
         $tokenClaims = (array)JWT::decode($accessToken, $keys, ['RS256']);
