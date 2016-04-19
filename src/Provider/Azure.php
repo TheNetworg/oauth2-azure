@@ -150,8 +150,8 @@ class Azure extends AbstractProvider
     private function request($method, $ref, &$accessToken, $options = [])
     {
         if ($accessToken->hasExpired()) {
-            $accessToken = $app->OAuth2->provider->getAccessToken('refresh_token', [
-                'refresh_token' => $app->OAuth2->token->getRefreshToken(),
+            $accessToken = $this->getAccessToken('refresh_token', [
+                'refresh_token' => $accessToken->getRefreshToken(),
                 'resource' => $this->urlAPI
             ]);
         }
