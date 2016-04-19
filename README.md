@@ -152,6 +152,7 @@ With version 1.2.0 you can now use this library to protect your API with Azure A
 
 // Obtain the accessToken - in this case, we are getting it from Authorization header
 $headers = getallheaders();
+// Assuming you got the value of Authorization header as "Bearer [the_access_token]" we parse it
 $authorization = explode(' ', $headers['Authorization']);
 $accessToken = $authorization[1];
 
@@ -163,7 +164,19 @@ try {
 
 // The access token is valid, you can now proceed with your code. You can also access the $claims as defined in JWT - for example roles, group memberships etc.
 ```
-While doesn't doesn't allow you to request tokens for additional resources (`on_behalf_of`), I believe it is a good start. The support for such grant is going to be available in later release.
+
+You may also need to access some other resource from the API like the Microsoft Graph to get some additional information. In order to do that, there is `urn:ietf:params:oauth:grant-type:jwt-bearer` grant available ([RFC](https://tools.ietf.org/html/draft-jones-oauth-jwt-bearer-03)). An example (assuming you have the code above working and you have the required permissions configured correctly in the Azure AD application):
+```php
+$graphAccessToken = $provider->getAccessToken('jwt_bearer', [
+    'resource' => 'https://graph.microsoft.com/v1.0/"',
+    'assertion' => $accessToken,
+    'requested_token_use' => 'on_behalf_of'
+]);
+
+$me = $provider->get('https://graph.microsoft.com/v1.0/me', $graphAccessToken);
+print_r($me);
+```
+Just to make it easier so you don't have to remember entire name for `grant_type` (`urn:ietf:params:oauth:grant-type:jwt-bearer`), you just use short `jwt_bearer` instead.
 
 ## Azure Active Directory B2C - *experimental*
 You can also now very simply make use of [Azure Active Directory B2C](https://azure.microsoft.com/en-us/documentation/articles/active-directory-b2c-reference-oauth-code/). Before authentication, change the endpoints using `pathAuthorize`, `pathToken` and `scope` and additionally specify your [login policy](https://azure.microsoft.com/en-gb/documentation/articles/active-directory-b2c-reference-policies/). **Please note that the B2C support is still experimental and wasn't fully tested.**
@@ -193,12 +206,12 @@ If you are using this library and would like to be listed here, please let us kn
 - [TheNetworg/DreamSpark-SSO](https://github.com/thenetworg/dreamspark-sso)
 
 ## Contributing
-Contributions are **welcome** and will be fully **credited**.
-
 We accept contributions via [Pull Requests on Github](https://github.com/thenetworg/oauth2-azure).
 
 ## Credits
 - [Jan Hajek](https://github.com/hajekj) ([TheNetw.org](https://thenetw.org))
+- [Vittorio Bartocci](https://github.com/vibronet) (Microsoft)
+    - Thanks for the splendid support while implementing #16
 - [All Contributors](https://github.com/thenetworg/oauth2-azure/contributors)
 
 ## Support

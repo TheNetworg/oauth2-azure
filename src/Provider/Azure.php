@@ -6,6 +6,7 @@ use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
 use League\OAuth2\Client\Grant\AbstractGrant;
+use TheNetworg\OAuth2\Client\Grant\JwtBearer;
 use TheNetworg\OAuth2\Client\Token\AccessToken;
 use Psr\Http\Message\ResponseInterface;
 
@@ -24,6 +25,12 @@ class Azure extends AbstractProvider
     public $urlAPI = "https://graph.windows.net/";
 
     public $API_VERSION = "1.6";
+
+    public function __construct(array $options = [], array $collaborators = [])
+    {
+        parent::__construct($options, $collaborators);
+        $this->grantFactory->setGrant('jwt_bearer', new JwtBearer);
+    }
 
     public function getBaseAuthorizationUrl()
     {
