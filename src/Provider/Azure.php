@@ -198,6 +198,18 @@ class Azure extends AbstractProvider
     }
     
     /**
+     * Obtain URL for logging out the user.
+     *
+     * @input $post_logout_redirect_uri string The URL which the user should be redirected to after logout
+     *
+     * @return string
+     */
+    public function getLogoutUrl($post_logout_redirect_uri)
+    {
+        return 'https://login.microsoftonline.com/'.$this->tenant.'/oauth2/logout?post_logout_redirect_uri='.rawurlencode($post_logout_redirect_uri);
+    }
+    
+    /**
      * Validate the access token you received in your application.
      *
      * @input $accessToken string The access token you received in the authorization header.
