@@ -11,6 +11,7 @@ This package provides [Azure Active Directory](https://azure.microsoft.com/en-us
     - [Authorization Code Flow](#authorization-code-flow)
         - [Advanced flow](#advanced-flow)
         - [Using custom parameters](#using-custom-parameters)
+    - [**NEW** - Logging out](#logging-out)
 - [Making API Requests](#making-api-requests)
     - [Variables](#variables)
 - [Resource Owner](#resource-owner)
@@ -100,6 +101,15 @@ $authUrl = $provider->getAuthorizationUrl([
 ]);
 ```
 You can find additional parameters [here](https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx).
+
+### Logging out
+If you need to quickly generate a logout URL for the user, you can do following:
+```php
+// Assuming you have provider properly initialized.
+$post_logout_redirect_uri = 'https://www.msn.com'; // The logout destination after the user is logged out from their account.
+$logoutUrl = $provider->getLogoutUrl($post_logout_redirect_uri);
+header('Location: '.$logoutUrl); // Redirect the user to the generated URL
+```
 
 ## Making API Requests
 
