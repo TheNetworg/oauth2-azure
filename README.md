@@ -220,7 +220,7 @@ We accept contributions via [Pull Requests on Github](https://github.com/thenetw
 
 ## Credits
 - [Jan Hajek](https://github.com/hajekj) ([TheNetw.org](https://thenetw.org))
-- [Vittorio Bartocci](https://github.com/vibronet) (Microsoft)
+- [Vittorio Bertocci](https://github.com/vibronet) (Microsoft)
     - Thanks for the splendid support while implementing #16
 - [All Contributors](https://github.com/thenetworg/oauth2-azure/contributors)
 
