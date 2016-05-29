@@ -12,6 +12,8 @@ This package provides [Azure Active Directory](https://azure.microsoft.com/en-us
         - [Advanced flow](#advanced-flow)
         - [Using custom parameters](#using-custom-parameters)
     - [**NEW** - Logging out](#logging-out)
+    - [Scopes](#scopes)
+    - [Multi and Single tenant applications](#multi-and-single-tenant-applications)
 - [Making API Requests](#making-api-requests)
     - [Variables](#variables)
 - [Resource Owner](#resource-owner)
@@ -43,7 +45,8 @@ Usage is the same as The League's OAuth client, using `\TheNetworg\OAuth2\Client
 $provider = new TheNetworg\OAuth2\Client\Provider\Azure([
     'clientId'          => '{azure-client-id}',
     'clientSecret'      => '{azure-client-secret}',
-    'redirectUri'       => 'https://example.com/callback-url'
+    'redirectUri'       => 'https://example.com/callback-url',
+    'resource'          => 'https://graph.windows.net/'
 ]);
 
 if (!isset($_GET['code'])) {
@@ -71,7 +74,7 @@ if (!isset($_GET['code'])) {
     try {
 
         // We got an access token, let's now get the user's details
-        $me = $provider->get("me", $token);
+        $me = $provider->get("me?api-version=1.6", $token);
 
         // Use these details to create a new profile
         printf('Hello %s!', $me['givenName']);
@@ -89,7 +92,7 @@ if (!isset($_GET['code'])) {
 
 #### Advanced flow
 
-The [Authorization Code Grant Flow](https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx) is a little bit different for Azure Active Directory. Instead of scopes, you specify the resource which you would like to access - there is a param `$provider->authWithResource` which will automatically populate the `resource` param of request with the value of either `$provider->resource` or `$provider->urlAPI`. This feature is mostly intended for v2.0 endpoint of Azure AD (see more [here](https://azure.microsoft.com/en-us/documentation/articles/active-directory-v2-compare/#scopes-not-resources)).
+The [Authorization Code Grant Flow](https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx) is a little bit different for Azure Active Directory. Instead of scopes, you specify the resource which you would like to access - there is a param `$provider->resource` (`null` on default) which will automatically populate the `resource` param of request with its value. If you plan to use v2.0 endpoint of Azure AD or Azure AD B2C you can disregard this and use [scopes](#scopes) (see more [here](https://azure.microsoft.com/en-us/documentation/articles/active-directory-v2-compare/#scopes-not-resources)).
 
 #### Using custom parameters
 
@@ -109,6 +112,40 @@ $post_logout_redirect_uri = 'https://www.msn.com'; // The logout destination aft
 $logoutUrl = $provider->getLogoutUrl($post_logout_redirect_uri);
 header('Location: '.$logoutUrl); // Redirect the user to the generated URL
 ```
+
+### Scopes
+When using with Azure AD v2.0 endpoints, you have to specify the [scopes](https://msdn.microsoft.com/library/azure/ad/graph/howto/azure-ad-graph-api-permission-scopes). In order to pass scopes into the authorization URL, you would do following:
+```php
+$authUrl = $provider->getAuthorizationUrl([
+    'scope' => [
+        'scope1',
+        'scope2',
+        ...
+    ]
+]);
+```
+
+### Multi and Single tenant applications
+By default, the library is configured to be multitenant (using the common endpoint). In order to lock the application down to a single tenant, you can set the metadata to only single organization.
+```php
+$provider = new TheNetworg\OAuth2\Client\Provider\Azure([
+    'metadata' => 'https://login.microsoftonline.com/tenant.onmicrosoft.com/.well-known/openid-configuration',
+    ...other configuration
+]);
+```
+If you would like to restrict access to multiple organizations, you can do following (using the default, common endpoint):
+```php
+$provider = new TheNetworg\OAuth2\Client\Provider\Azure([
+    'tenants' => [
+        '1e418418-064b-4157-9a57-c828101b5d7f',
+        'tenant.onmicrosoft.com',
+        'tenantdomain.com'
+    ],
+    ...other configuration
+]);
+```
+Notice that you can put both tenant domain names and the id. For the best performance, it is best to put the tenant ids there, because the domain names have to query the configuration endpoint in order to obtain the tenant id.
+**Right now, it only supports tenant ids. Name resolution will be added soon.**
 
 ## Making API Requests
 
@@ -150,13 +187,14 @@ The exposed attributes and function are:
 ## Microsoft Graph
 Calling [Microsoft Graph](http://graph.microsoft.io/) is very simple with this library. After provider initialization simply change the API URL followingly (replace `v1.0` with your desired version):
 ```php
-$provider->urlAPI = "https://graph.microsoft.com/v1.0/";
 $provider->resource = "https://graph.microsoft.com/";
+// Authorization stuff
+$me = $provider->get('1.0/me', $token);
 ```
 After that, when requesting access token, refresh token or so, provide the `resource` with value `https://graph.microsoft.com/` in order to be able to make calls to the Graph (see more about `resource` [here](#advanced-flow)).
 
 ## Protecting your API - *experimental*
-With version 1.2.0 you can now use this library to protect your API with Azure Active Directory authentication very easily. The Provider now also exposes `validateAccessToken(string $token)` which lets you pass an access token inside which you for example received in the `Authorization` header of the request on your API. You can use the function followingly (in vanilla PHP):
+With version 1.2.0 and onward you can now use this library to protect your API with Azure Active Directory authentication very easily. The Provider now also exposes `validateAccessToken(string $token)` which lets you pass an access token inside which you for example received in the `Authorization` header of the request on your API. You can use the function followingly (in vanilla PHP):
 ```php
 // Assuming you have already initialized the $provider
 
@@ -178,7 +216,7 @@ try {
 You may also need to access some other resource from the API like the Microsoft Graph to get some additional information. In order to do that, there is `urn:ietf:params:oauth:grant-type:jwt-bearer` grant available ([RFC](https://tools.ietf.org/html/draft-jones-oauth-jwt-bearer-03)). An example (assuming you have the code above working and you have the required permissions configured correctly in the Azure AD application):
 ```php
 $graphAccessToken = $provider->getAccessToken('jwt_bearer', [
-    'resource' => 'https://graph.microsoft.com/v1.0/',
+    'resource' => 'https://graph.microsoft.com/',
     'assertion' => $accessToken,
     'requested_token_use' => 'on_behalf_of'
 ]);
@@ -191,9 +229,7 @@ Just to make it easier so you don't have to remember entire name for `grant_type
 ## Azure Active Directory B2C - *experimental*
 You can also now very simply make use of [Azure Active Directory B2C](https://azure.microsoft.com/en-us/documentation/articles/active-directory-b2c-reference-oauth-code/). Before authentication, change the endpoints using `pathAuthorize`, `pathToken` and `scope` and additionally specify your [login policy](https://azure.microsoft.com/en-gb/documentation/articles/active-directory-b2c-reference-policies/). **Please note that the B2C support is still experimental and wasn't fully tested.**
 ```php
-$provider->pathAuthorize = "/oauth2/v2.0/authorize";
-$provider->pathToken = "/oauth2/v2.0/token";
-$provider->scope = ["idtoken"];
+// Make use of custom metadata
 
 // Specify custom policy in our authorization URL
 $authUrl = $provider->getAuthorizationUrl([

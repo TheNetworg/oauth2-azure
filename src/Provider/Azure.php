@@ -16,10 +16,10 @@ class Azure extends AbstractProvider
     use BearerAuthorizationTrait;
 
     public $metadata = "https://login.microsoftonline.com/common/.well-known/openid-configuration";
-    
-    public $scope = [];
 
     public $resource = null;
+    
+    public $tenants = [];
     
     private $openIdConfiguration = [
         'default' => null,
@@ -38,6 +38,11 @@ class Azure extends AbstractProvider
     {
         if(isset($options['metadata'])) {
             $this->metadata = $options['metadata'];
+        }
+        if(isset($options['tenants'])) {
+            foreach($options['tenants'] as $tenant) {
+                $this->tenants[] = $tenant;
+            }
         }
         
         parent::__construct($options, $collaborators);
@@ -85,7 +90,7 @@ class Azure extends AbstractProvider
 
     protected function getDefaultScopes()
     {
-        return $this->scope;
+        return [];
     }
     
     protected function createAccessToken(array $response, AbstractGrant $grant)
@@ -280,6 +285,13 @@ class Azure extends AbstractProvider
         else {
             if($tokenClaims['iss'] != $this->openIdConfiguration['default']['issuer']) {
                 throw new RuntimeException("Invalid token issuer!");
+            }
+        }
+        
+        // Limited multitenant application checks
+        if(count($this->tenants) > 0) {
+            if(in_array($tokenClaims['tid'], $this->tenants) === FALSE) {
+                throw new RuntimeException("Invalid tenant!");
             }
         }
         
