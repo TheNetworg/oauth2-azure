@@ -184,11 +184,6 @@ class Azure extends AbstractProvider
             $url = $ref;
         } else {
             $url = $this->resource.$ref;
-
-            // if (strpos($this->resource, "graph.microsoft.com") === FALSE) {
-            //     $url .= (strrpos($url, "?") === false) ? "?" : "&";
-            //     $url .= "api-version=".$this->API_VERSION;
-            // }
         }
 
         if(isset($options['body']) && (gettype($options['body']) == 'array' || gettype($options['body']) == 'object')) {
@@ -229,7 +224,13 @@ class Azure extends AbstractProvider
      */
     public function getLogoutUrl($post_logout_redirect_uri = null, $policy = 'default')
     {
-        return $this->openIdConfiguration[$policy]['token_endpoint']; // + post_logout_redirect_uri='.rawurlencode($post_logout_redirect_uri)
+        $url = $this->openIdConfiguration[$policy]['token_endpoint'];
+        if($post_logout_redirect_uri) {
+            if(strpos($url, '?') !== FALSE) $url .= "&";
+            else $url .= "?";
+            $url .= 'post_logout_redirect_uri='.rawurlencode($post_logout_redirect_uri);
+        }
+        return $url;
     }
     
     /**
