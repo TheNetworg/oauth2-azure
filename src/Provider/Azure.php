@@ -5,7 +5,9 @@ namespace TheNetworg\OAuth2\Client\Provider;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
-use League\OAuth2\Client\Token\AccessToken;
+use League\OAuth2\Client\Grant\AbstractGrant;
+use TheNetworg\OAuth2\Client\Grant\JwtBearer;
+use TheNetworg\OAuth2\Client\Token\AccessToken;
 use Psr\Http\Message\ResponseInterface;
 use \Firebase\JWT\JWT;
 
@@ -24,6 +26,12 @@ class Azure extends AbstractProvider
     public $urlAPI = "https://graph.windows.net/";
 
     public $API_VERSION = "1.6";
+
+    public function __construct(array $options = [], array $collaborators = [])
+    {
+        parent::__construct($options, $collaborators);
+        $this->grantFactory->setGrant('jwt_bearer', new JwtBearer);
+    }
 
     public function getBaseAuthorizationUrl()
     {
@@ -59,51 +67,23 @@ class Azure extends AbstractProvider
         return $this->scope;
     }
     
-    /**
-     * Get JWT verification keys from Azure Active Directory.
-     *
-     * @return array
-     */
-    private function getJwtVerificationKeys()
+    protected function createAccessToken(array $response, AbstractGrant $grant)
     {
-        $factory = $this->getRequestFactory();
-        $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/common/discovery/keys', []);
-        
-        $response = $this->getResponse($request);
-        
-        $keys = [];
-        foreach ($response['keys'] as $i => $keyinfo) {
-            if (isset($keyinfo['x5c']) && is_array($keyinfo['x5c'])) {
-                foreach ($keyinfo['x5c'] as $encodedkey) {
-                    $key = "-----BEGIN CERTIFICATE-----\n";
-                    $key .= wordwrap($encodedkey, 64, "\n", true);
-                    $key .= "\n-----END CERTIFICATE-----";
-                    $keys[$keyinfo['kid']] = $key;
-                }
-            }
-        }
-        
-        return $keys;
+        return new AccessToken($response, $this);
     }
     
-    public function getResourceOwner(AccessToken $token)
+    public function getResourceOwner(\League\OAuth2\Client\Token\AccessToken $token)
     {
-        $jwt = (string) $token;
-        try {
-            $keys = $this->getJwtVerificationKeys();
-            $values = (array)JWT::decode($token, $keys, ['RS256']);
-        }  catch (JWT_Exception $e) {
-            $values = [];
-        }
-        return $this->createResourceOwner($values, $token);
+        $data = $token->getIdTokenClaims();
+        return $this->createResourceOwner($data, $token);
     }
     
-    public function getResourceOwnerDetailsUrl(AccessToken $token)
+    public function getResourceOwnerDetailsUrl(\League\OAuth2\Client\Token\AccessToken $token)
     {
         return null;
     }
 
-    protected function createResourceOwner(array $response, AccessToken $token)
+    protected function createResourceOwner(array $response, \League\OAuth2\Client\Token\AccessToken $token)
     {
         return new AzureResourceOwner($response);
     }
@@ -170,8 +150,8 @@ class Azure extends AbstractProvider
     private function request($method, $ref, &$accessToken, $options = [])
     {
         if ($accessToken->hasExpired()) {
-            $accessToken = $app->OAuth2->provider->getAccessToken('refresh_token', [
-                'refresh_token' => $app->OAuth2->token->getRefreshToken(),
+            $accessToken = $this->getAccessToken('refresh_token', [
+                'refresh_token' => $accessToken->getRefreshToken(),
                 'resource' => $this->urlAPI
             ]);
         }
@@ -211,9 +191,103 @@ class Azure extends AbstractProvider
 
         return $response;
     }
-
+    
     public function getClientId()
     {
         return $this->clientId;
+    }
+    
+    /**
+     * Obtain URL for logging out the user.
+     *
+     * @input $post_logout_redirect_uri string The URL which the user should be redirected to after logout
+     *
+     * @return string
+     */
+    public function getLogoutUrl($post_logout_redirect_uri)
+    {
+        return 'https://login.microsoftonline.com/'.$this->tenant.'/oauth2/logout?post_logout_redirect_uri='.rawurlencode($post_logout_redirect_uri);
+    }
+    
+    /**
+     * Validate the access token you received in your application.
+     *
+     * @input $accessToken string The access token you received in the authorization header.
+     *
+     * @return array
+     */
+    public function validateAccessToken($accessToken)
+    {
+        $keys = $this->getJwtVerificationKeys();
+        $tokenClaims = (array)JWT::decode($accessToken, $keys, ['RS256']);
+        
+        if($provider->getClientId() != $tokenClaims['aud']) {
+            throw new RuntimeException("The audience is invalid!");
+        }
+        if($tokenClaims['nbf'] > time() || $tokenClaims['exp'] < time()) {
+            // Additional validation is being performed in firebase/JWT itself
+            throw new RuntimeException("The id_token is invalid!");
+        }
+        
+        if($provider->tenant == "common") {
+            $provider->tenant = $tokenClaims['tid'];
+            
+            $tenant = $provider->getTenantDetails($provider->tenant);
+            if($tokenClaims['iss'] != $tenant['issuer']) {
+                throw new RuntimeException("Invalid token issuer!");
+            }
+        }
+        else {
+            $tenant = $provider->getTenantDetails($provider->tenant);
+            if($tokenClaims['iss'] != $tenant['issuer']) {
+                throw new RuntimeException("Invalid token issuer!");
+            }
+        }
+        
+        return $tokenClaims;
+    }
+    
+    /**
+     * Get JWT verification keys from Azure Active Directory.
+     *
+     * @return array
+     */
+    public function getJwtVerificationKeys()
+    {
+        $factory = $this->getRequestFactory();
+        $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/common/discovery/keys', []);
+        
+        $response = $this->getResponse($request);
+        
+        $keys = [];
+        foreach ($response['keys'] as $i => $keyinfo) {
+            if (isset($keyinfo['x5c']) && is_array($keyinfo['x5c'])) {
+                foreach ($keyinfo['x5c'] as $encodedkey) {
+                    $key = "-----BEGIN CERTIFICATE-----\n";
+                    $key .= wordwrap($encodedkey, 64, "\n", true);
+                    $key .= "\n-----END CERTIFICATE-----";
+                    $keys[$keyinfo['kid']] = $key;
+                }
+            }
+        }
+        
+        return $keys;
+    }
+    
+    /**
+     * Get the specified tenant's details.
+     *
+     * @param string $tenant
+     *
+     * @return array
+     */
+    public function getTenantDetails($tenant)
+    {
+        $factory = $this->getRequestFactory();
+        $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/'.$tenant.'/.well-known/openid-configuration', []);
+        
+        $response = $this->getResponse($request);
+        
+        return $response;
     }
 }
