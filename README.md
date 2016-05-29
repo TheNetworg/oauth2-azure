@@ -19,7 +19,7 @@ This package provides [Azure Active Directory](https://azure.microsoft.com/en-us
 - [Resource Owner](#resource-owner)
 - [Microsoft Graph](#microsoft-graph)
 - [**NEW** - Protecting your API - *experimental*](#protecting-your-api---experimental)
-- [Azure Active Directory B2C - *experimental*](#azure-active-directory-b2c---experimental)
+- [Azure Active Directory B2C](#azure-active-directory-b2c)
 - [Multipurpose refresh tokens - *experimental*](#multipurpose-refresh-tokens---experimental)
 - [Known users](#known-users)
 - [Contributing](#contributing)
@@ -226,10 +226,18 @@ print_r($me);
 ```
 Just to make it easier so you don't have to remember entire name for `grant_type` (`urn:ietf:params:oauth:grant-type:jwt-bearer`), you just use short `jwt_bearer` instead.
 
-## Azure Active Directory B2C - *experimental*
-You can also now very simply make use of [Azure Active Directory B2C](https://azure.microsoft.com/en-us/documentation/articles/active-directory-b2c-reference-oauth-code/). Before authentication, change the endpoints using `pathAuthorize`, `pathToken` and `scope` and additionally specify your [login policy](https://azure.microsoft.com/en-gb/documentation/articles/active-directory-b2c-reference-policies/). **Please note that the B2C support is still experimental and wasn't fully tested.**
+## Azure Active Directory B2C
+You can also now very simply make use of [Azure Active Directory B2C](https://azure.microsoft.com/en-us/documentation/articles/active-directory-b2c-reference-oauth-code/). 
 ```php
-// Make use of custom metadata
+$provider = new TheNetworg\OAuth2\Client\Provider\Azure([
+    'metadata' => 'https://login.microsoftonline.com/b2ctenant.onmicrosoft.com/v2.0/.well-known/openid-configuration?p=policy_id',
+    'policies' => [
+        'signup' => 'your_signup_policy_name',
+        'signin' => 'your_signin_policy_name',
+        'userprofile' => 'your_userprofile_policy_name'
+    ]
+    ...other configuration
+]);
 
 // Specify custom policy in our authorization URL
 $authUrl = $provider->getAuthorizationUrl([

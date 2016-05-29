@@ -258,7 +258,6 @@ class Azure extends AbstractProvider
     public function validateToken($accessToken, $idToken, $policy = 'default')
     {
         $keys = $this->getJwtVerificationKeys($this->openIdConfiguration['default']['jwks_uri']);
-        
         $tokenClaims = null;
         try {
             $tks = explode('.', $idToken);
@@ -330,9 +329,14 @@ class Azure extends AbstractProvider
         
         $response = $this->getResponse($request);
         
+        print_r($response);
+        
         $keys = [];
         foreach ($response['keys'] as $i => $keyinfo) {
-            if (isset($keyinfo['x5c']) && is_array($keyinfo['x5c'])) {
+            if(isset($keyinfo['kty']) && $keyinfo['kty'] == "RSA") {
+                $keys[$keyinfo['kid']] = (string)\JOSE_JWK::decode($keyinfo);
+            }
+            else if (isset($keyinfo['x5c']) && is_array($keyinfo['x5c'])) {
                 foreach ($keyinfo['x5c'] as $encodedkey) {
                     $key = "-----BEGIN CERTIFICATE-----\n";
                     $key .= wordwrap($encodedkey, 64, "\n", true);
