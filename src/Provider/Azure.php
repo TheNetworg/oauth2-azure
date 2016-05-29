@@ -88,28 +88,31 @@ class Azure extends AbstractProvider
         return new AzureResourceOwner($response);
     }
 
-    public function getObjects($tenant, $ref, &$accessToken, $objects = [], $headers = [])
+    public function getObjects($tenant, $ref, &$accessToken, $headers = [])
     {
+        $objects = [];
+        
         if (filter_var($ref, FILTER_VALIDATE_URL) === FALSE) {
             $ref = $tenant."/".$ref;
         }
-        $response = $this->request('GET', $ref, $accessToken, ['headers' => $headers]);
-
-        if ($response) {
-            $values = $response['value'];
-            foreach ($values as $value) {
-                $objects[] = $value;
+        
+        $response = null;
+		do {
+        	$response = $this->get($ref, $accessToken);
+            foreach ($response as $value) {
+                $objects[] = $value['objectId'];
             }
-            
-            if (isset($response['odata.nextLink'])) {
-                $nextLink = $response['odata.nextLink'];
+			if (isset($response['odata.nextLink'])) {
+                $ref = $response['odata.nextLink'];
             } elseif (isset($response['@odata.nextLink'])) {
-                $nextLink = $response['@odata.nextLink'];
-            } else {
-                return $objects;
+                $ref = $response['@odata.nextLink'];
             }
-            return $this->getObjects($tenant, $nextLink, $accessToken, $objects);
-        }
+			else {
+				$ref = null;
+			}
+		} while ($ref != null);
+        
+        return $objects;
     }
 
     public function get($ref, &$accessToken, $headers = [])
