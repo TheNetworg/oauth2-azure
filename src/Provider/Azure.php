@@ -24,8 +24,11 @@ class Azure extends AbstractProvider
     public $tenant = "common";
 
     public $urlAPI = "https://graph.windows.net/";
+    public $resource = "";
 
     public $API_VERSION = "1.6";
+    
+    public $authWithResource = true;
 
     public function __construct(array $options = [], array $collaborators = [])
     {
@@ -41,6 +44,14 @@ class Azure extends AbstractProvider
     public function getBaseAccessTokenUrl(array $params)
     {
         return $this->urlLogin.$this->tenant.$this->pathToken;
+    }
+    
+    public function getAccessToken($grant, array $options = [])
+    {
+        if($this->authWithResource) {
+            $options['resource'] = $this->resource ? $this->resource : $this->urlAPI;
+        }
+        return parent::getAccessToken($grant, $options);
     }
 
     protected function checkResponse(ResponseInterface $response, $data)
@@ -98,9 +109,9 @@ class Azure extends AbstractProvider
         
         $response = null;
 		do {
-        	$response = $this->get($ref, $accessToken);
+        	$response = $this->get($ref, $accessToken, $headers);
             foreach ($response as $value) {
-                $objects[] = $value['objectId'];
+                $objects[] = $value;
             }
 			if (isset($response['odata.nextLink'])) {
                 $ref = $response['odata.nextLink'];
@@ -154,8 +165,7 @@ class Azure extends AbstractProvider
     {
         if ($accessToken->hasExpired()) {
             $accessToken = $this->getAccessToken('refresh_token', [
-                'refresh_token' => $accessToken->getRefreshToken(),
-                'resource' => $this->urlAPI
+                'refresh_token' => $accessToken->getRefreshToken()
             ]);
         }
 

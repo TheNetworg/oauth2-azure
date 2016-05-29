@@ -64,8 +64,7 @@ if (!isset($_GET['code'])) {
 
     // Try to get an access token (using the authorization code grant)
     $token = $provider->getAccessToken('authorization_code', [
-        'code' => $_GET['code'],
-        'resource' => 'https://graph.windows.net'
+        'code' => $_GET['code']
     ]);
 
     // Optional: Now you have a token you can look up a users profile data
@@ -90,7 +89,7 @@ if (!isset($_GET['code'])) {
 
 #### Advanced flow
 
-The [Authorization Code Grant Flow](https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx) is a little bit different for Azure Active Directory. Instead of scopes, you specify the resource which you would like to access - see the above example where `resource` is specified when obtaining access token from the code.
+The [Authorization Code Grant Flow](https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx) is a little bit different for Azure Active Directory. Instead of scopes, you specify the resource which you would like to access - there is a param `$provider->authWithResource` which will automatically populate the `resource` param of request with the value of either `$provider->resource` or `$provider->urlAPI`. This feature is mostly intended for v2.0 endpoint of Azure AD (see more [here](https://azure.microsoft.com/en-us/documentation/articles/active-directory-v2-compare/#scopes-not-resources)).
 
 #### Using custom parameters
 
@@ -152,6 +151,7 @@ The exposed attributes and function are:
 Calling [Microsoft Graph](http://graph.microsoft.io/) is very simple with this library. After provider initialization simply change the API URL followingly (replace `v1.0` with your desired version):
 ```php
 $provider->urlAPI = "https://graph.microsoft.com/v1.0/";
+$provider->resource = "https://graph.microsoft.com/";
 ```
 After that, when requesting access token, refresh token or so, provide the `resource` with value `https://graph.microsoft.com/` in order to be able to make calls to the Graph (see more about `resource` [here](#advanced-flow)).
 
