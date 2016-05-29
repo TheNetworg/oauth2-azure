@@ -220,6 +220,16 @@ class Azure extends AbstractProvider
         return $this->clientId;
     }
     
+    protected function appendQuery($url, $query)
+    {
+        $query = trim($query, '?&');
+        if ($query) {
+            if(strpos($url, '?') !== FALSE) return $url."&".$query;
+            else return $url."?".$query;
+        }
+        return $url;
+    }
+    
     /**
      * Obtain URL for logging out the user.
      *
