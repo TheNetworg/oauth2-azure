@@ -150,12 +150,12 @@ class Azure extends AbstractProvider
     {
         $objects = [];
         
-        if (filter_var($ref, FILTER_VALIDATE_URL) === FALSE) {
-            $ref = $tenant."/".$ref;
-        }
-        
         $response = null;
 		do {
+            if (filter_var($ref, FILTER_VALIDATE_URL) === FALSE) {
+                $ref = $tenant."/".$ref;
+            }
+            
         	$response = $this->get($ref, $accessToken, $headers);
             foreach ($response as $value) {
                 $objects[] = $value;
