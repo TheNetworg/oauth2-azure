@@ -19,7 +19,9 @@ class Azure extends AbstractProvider
 
     public $resource = null;
     
+    protected $audience = null;
     protected $validateIssuer = true;
+    protected $isApi = false;
     
     protected $responseType = 'code';
     protected $responseMode;
@@ -39,6 +41,12 @@ class Azure extends AbstractProvider
         }
         if(isset($options['responseMode'])) {
             $this->responseMode = $options['responseMode'];
+        }
+        if(isset($options['audience'])) {
+            $this->audience = $options['audience'];
+        }
+        if(isset($options['isApi'])) {
+            $this->isApi = $options['isApi'];
         }
         
         parent::__construct($options, $collaborators);
@@ -98,7 +106,7 @@ class Azure extends AbstractProvider
             } else {
                 $message = $response->getReasonPhrase();
             }
-
+            
             throw new IdentityProviderException(
                 $message,
                 $response->getStatusCode(),
@@ -289,15 +297,17 @@ class Azure extends AbstractProvider
             if(count($tks) == 3 && !empty($tks[2])) {
                 $tokenClaims = (array)JWT::decode($token, $keys, ['RS256']);
             }
-            else {
+            else if(!$this->isApi) {
                 // The token is unsigned (coming from v1.0 endpoint) - https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx
                 $tokenClaims = (array)JWT::jsonDecode(JWT::urlsafeB64Decode($tks[1]));
+            }
+            else {
+                throw new \RuntimeException("Invalid token type passed!");
             }
         }  catch (JWT_Exception $e) {
             throw new \RuntimeException("Unable to parse the id_token!");
         }
-        
-        if($this->getClientId() != $tokenClaims['aud']) {
+        if($this->audience && $this->audience != $tokenClaims['aud']) {
             throw new \RuntimeException("The audience is invalid!");
         }
         if($tokenClaims['nbf'] > time() || $tokenClaims['exp'] < time()) {
