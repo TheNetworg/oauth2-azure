@@ -58,7 +58,8 @@ class Azure extends AbstractProvider
     
     public function getAccessToken($grant, array $options = [])
     {
-        if($this->resource != null) {
+        // If we are requesting a resource (set as $provider->resource) or passing it on our own in case of multipurpose refresh tokens
+        if($this->resource != null && !isset($options['resource'])) {
             $options['resource'] = $this->resource;
         }
         return parent::getAccessToken($grant, $options);

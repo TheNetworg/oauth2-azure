@@ -20,7 +20,7 @@ This package provides [Azure Active Directory](https://azure.microsoft.com/en-us
 - [Microsoft Graph](#microsoft-graph)
 - [**NEW** - Protecting your API - *experimental*](#protecting-your-api---experimental)
 - [Azure Active Directory B2C](#azure-active-directory-b2c)
-- [Multipurpose refresh tokens - *experimental*](#multipurpose-refresh-tokens---experimental)
+- [Multipurpose refresh tokens](#multipurpose-refresh-tokens)
 - [Known users](#known-users)
 - [Contributing](#contributing)
 - [Credits](#credits)
@@ -231,7 +231,7 @@ $provider = new TheNetworg\OAuth2\Client\Provider\Azure([
 ```
 As of now, if you want to make use of more policies (for instance signing in, signing up and editing profile) you have to create a separate provider.
 
-## Multipurpose refresh tokens - *experimental*
+## Multipurpose refresh tokens
 In cause that you need to access multiple resources (like your API and Microsoft Graph), you can use multipurpose [refresh tokens](https://msdn.microsoft.com/en-us/library/azure/dn645538.aspx). Once obtaining a token for first resource, you can simply request another token for different resource like so:
 ```php
 $accessToken2 = $provider->getAccessToken('refresh_token', [
@@ -239,7 +239,7 @@ $accessToken2 = $provider->getAccessToken('refresh_token', [
     'resource' => 'http://urlOfYourSecondResource'
 ]);
 ```
-At the moment, there is one issue: When you make a call to your API and the token has expired, it will have the value of `$provider->urlAPI` which is obviously wrong for `$accessToken2`. The solution is very simple - set the `$provider->urlAPI` to the resource which you want to call. This issue will be addressed in future release. **Please note that this is experimental and wasn't fully tested.**
+You would do the same for getting token for another resource and so on.
 
 ## Known users
 If you are using this library and would like to be listed here, please let us know!
