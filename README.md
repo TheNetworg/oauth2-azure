@@ -13,7 +13,7 @@ This package provides [Azure Active Directory](https://azure.microsoft.com/en-us
         - [Using custom parameters](#using-custom-parameters)
     - [**NEW** - Logging out](#logging-out)
     - [Scopes](#scopes)
-    - [Multi and Single tenant applications](#multi-and-single-tenant-applications)
+    - [Validating issuer](#validating-issuer)
 - [Making API Requests](#making-api-requests)
     - [Variables](#variables)
 - [Resource Owner](#resource-owner)
@@ -125,7 +125,7 @@ $authUrl = $provider->getAuthorizationUrl([
 ]);
 ```
 
-### Multi and Single tenant applications
+### Validating issuer
 By default, the library is configured to be multitenant (using the common endpoint). In order to lock the application down to a single tenant, you can set the metadata to only single organization.
 ```php
 $provider = new TheNetworg\OAuth2\Client\Provider\Azure([
@@ -136,16 +136,11 @@ $provider = new TheNetworg\OAuth2\Client\Provider\Azure([
 If you would like to restrict access to multiple organizations, you can do following (using the default, common endpoint):
 ```php
 $provider = new TheNetworg\OAuth2\Client\Provider\Azure([
-    'tenants' => [
-        '1e418418-064b-4157-9a57-c828101b5d7f',
-        'tenant.onmicrosoft.com',
-        'tenantdomain.com'
-    ],
+    'validateIssuer' => false,
     ...other configuration
 ]);
 ```
-Notice that you can put both tenant domain names and the id. For the best performance, it is best to put the tenant ids there, because the domain names have to query the configuration endpoint in order to obtain the tenant id.
-**Right now, it only supports tenant ids. Name resolution will be added soon.**
+After that, the validation of token's issuer is up to your application logic.
 
 ## Making API Requests
 
@@ -231,19 +226,10 @@ You can also now very simply make use of [Azure Active Directory B2C](https://az
 ```php
 $provider = new TheNetworg\OAuth2\Client\Provider\Azure([
     'metadata' => 'https://login.microsoftonline.com/b2ctenant.onmicrosoft.com/v2.0/.well-known/openid-configuration?p=policy_id',
-    'policies' => [
-        'signup' => 'your_signup_policy_name',
-        'signin' => 'your_signin_policy_name',
-        'userprofile' => 'your_userprofile_policy_name'
-    ]
     ...other configuration
 ]);
-
-// Specify custom policy in our authorization URL
-$authUrl = $provider->getAuthorizationUrl([
-    'p' => 'b2c_1_siup'
-]);
 ```
+As of now, if you want to make use of more policies (for instance signing in, signing up and editing profile) you have to create a separate provider.
 
 ## Multipurpose refresh tokens - *experimental*
 In cause that you need to access multiple resources (like your API and Microsoft Graph), you can use multipurpose [refresh tokens](https://msdn.microsoft.com/en-us/library/azure/dn645538.aspx). Once obtaining a token for first resource, you can simply request another token for different resource like so:

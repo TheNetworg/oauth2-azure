@@ -61,7 +61,7 @@ class AccessToken extends \League\OAuth2\Client\Token\AccessToken
             
             if(!isset($options['access_token'])) $options['access_token'] = null;
             
-            $this->idTokenClaims = $provider->validateToken($options['access_token'], $options['id_token']);
+            $this->idTokenClaims = $provider->validateToken($options['id_token']);
         }
     }
     
