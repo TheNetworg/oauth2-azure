@@ -294,21 +294,21 @@ class Azure extends AbstractProvider
                 $tokenClaims = (array)JWT::jsonDecode(JWT::urlsafeB64Decode($tks[1]));
             }
         }  catch (JWT_Exception $e) {
-            throw new RuntimeException("Unable to parse the id_token!");
+            throw new \RuntimeException("Unable to parse the id_token!");
         }
         
         if($this->getClientId() != $tokenClaims['aud']) {
-            throw new RuntimeException("The audience is invalid!");
+            throw new \RuntimeException("The audience is invalid!");
         }
         if($tokenClaims['nbf'] > time() || $tokenClaims['exp'] < time()) {
             // Additional validation is being performed in firebase/JWT itself
-            throw new RuntimeException("The id_token is invalid!");
+            throw new \RuntimeException("The id_token is invalid!");
         }
         
         if($this->validateIssuer) {
             if(strpos($this->metadata, "common") === FALSE) {
                 if($tokenClaims['iss'] != $this->openIdConfiguration['issuer']) {
-                    throw new RuntimeException("Invalid token issuer!");
+                    throw new \RuntimeException("Invalid token issuer!");
                 }
             }
         }
