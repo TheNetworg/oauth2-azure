@@ -19,7 +19,7 @@ This package provides [Azure Active Directory](https://azure.microsoft.com/en-us
 - [Resource Owner](#resource-owner)
 - [Microsoft Graph](#microsoft-graph)
 - [**NEW** - Protecting your API - *experimental*](#protecting-your-api---experimental)
-- [Azure Active Directory B2C](#azure-active-directory-b2c)
+- [Azure Active Directory B2C](https://github.com/TheNetworg/oauth2-azure/wiki/Azure-Active-Directory-B2C)
 - [Multipurpose refresh tokens](#multipurpose-refresh-tokens)
 - [Known users](#known-users)
 - [Contributing](#contributing)
@@ -220,16 +220,6 @@ $me = $provider->get('https://graph.microsoft.com/v1.0/me', $graphAccessToken);
 print_r($me);
 ```
 Just to make it easier so you don't have to remember entire name for `grant_type` (`urn:ietf:params:oauth:grant-type:jwt-bearer`), you just use short `jwt_bearer` instead.
-
-## Azure Active Directory B2C
-You can also now very simply make use of [Azure Active Directory B2C](https://azure.microsoft.com/en-us/documentation/articles/active-directory-b2c-reference-oauth-code/). 
-```php
-$provider = new TheNetworg\OAuth2\Client\Provider\Azure([
-    'metadata' => 'https://login.microsoftonline.com/b2ctenant.onmicrosoft.com/v2.0/.well-known/openid-configuration?p=policy_id',
-    ...other configuration
-]);
-```
-As of now, if you want to make use of more policies (for instance signing in, signing up and editing profile) you have to create a separate provider.
 
 ## Multipurpose refresh tokens
 In cause that you need to access multiple resources (like your API and Microsoft Graph), you can use multipurpose [refresh tokens](https://msdn.microsoft.com/en-us/library/azure/dn645538.aspx). Once obtaining a token for first resource, you can simply request another token for different resource like so:

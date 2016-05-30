@@ -69,4 +69,10 @@ class AccessToken extends \League\OAuth2\Client\Token\AccessToken
     {
         return $this->idTokenClaims;
     }
+    
+    public function getToken()
+    {
+        if($this->accessToken) return $this->accessToken;
+        else return $this->idToken;
+    }
 }
