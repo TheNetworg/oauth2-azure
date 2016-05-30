@@ -11,14 +11,14 @@ This package provides [Azure Active Directory](https://azure.microsoft.com/en-us
     - [Authorization Code Flow](#authorization-code-flow)
         - [Advanced flow](#advanced-flow)
         - [Using custom parameters](#using-custom-parameters)
-    - [**NEW** - Logging out](#logging-out)
+    - [Logging out](#logging-out)
     - [Scopes](#scopes)
     - [Validating issuer](#validating-issuer)
 - [Making API Requests](#making-api-requests)
     - [Variables](#variables)
 - [Resource Owner](#resource-owner)
 - [Microsoft Graph](#microsoft-graph)
-- [**NEW** - Protecting your API - *experimental*](#protecting-your-api---experimental)
+- [Protecting your API](#protecting-your-api)
 - [Azure Active Directory B2C](https://github.com/TheNetworg/oauth2-azure/wiki/Azure-Active-Directory-B2C)
 - [Multipurpose refresh tokens](#multipurpose-refresh-tokens)
 - [Known users](#known-users)
@@ -188,7 +188,7 @@ $me = $provider->get('1.0/me', $token);
 ```
 After that, when requesting access token, refresh token or so, provide the `resource` with value `https://graph.microsoft.com/` in order to be able to make calls to the Graph (see more about `resource` [here](#advanced-flow)).
 
-## Protecting your API - *experimental*
+## Protecting your API
 With version 1.2.0 and onward you can now use this library to protect your API with Azure Active Directory authentication very easily. The Provider now also exposes `validateAccessToken(string $token)` which lets you pass an access token inside which you for example received in the `Authorization` header of the request on your API. You can use the function followingly (in vanilla PHP):
 ```php
 // Assuming you have already initialized the $provider
@@ -197,10 +197,10 @@ With version 1.2.0 and onward you can now use this library to protect your API w
 $headers = getallheaders();
 // Assuming you got the value of Authorization header as "Bearer [the_access_token]" we parse it
 $authorization = explode(' ', $headers['Authorization']);
-$accessToken = $authorization[1];
+$token = $authorization[1];
 
 try {
-    $claims = $provider->validateAccessToken($accessToken);
+    $claims = $provider->validateToken($token);
 } catch (Exception $e) {
     // Something happened, handle the error
 }
