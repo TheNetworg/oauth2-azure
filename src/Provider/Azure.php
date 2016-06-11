@@ -26,7 +26,7 @@ class Azure extends AbstractProvider
     protected $responseType = 'code';
     protected $responseMode;
     
-    private $openIdConfiguration = null;
+    public $openIdConfiguration = null;
 
     public function __construct(array $options = [], array $collaborators = [])
     {
