@@ -154,6 +154,7 @@ This library also provides easy interface to make it easier to interact with [Az
 - `getObjects($tenant, $ref, $accessToken, $headers = [])` This is used for example for listing large amount of data - where you need to list all users for example - it automatically follows `odata.nextLink` until the end.
   - `$tenant` tenant has to be provided since the `odata.nextLink` doesn't contain it.
   - `$objects` should be either an empty array or a set of data which will be included in the results
+- `request($method, $ref, $accessToken, $options = [])` This is a pure method for making requests to the APIs, see the [code](https://github.com/TheNetworg/oauth2-azure/blob/master/src/Provider/Azure.php) for more information about usage.
 
 *Please note that if you need to create a custom request, the method getAuthenticatedRequest and getResponse can still be used.*
 

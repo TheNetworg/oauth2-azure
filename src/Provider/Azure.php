@@ -204,7 +204,7 @@ class Azure extends AbstractProvider
         return $this->wrapResponse($response);
     }
 
-    private function request($method, $ref, &$accessToken, $options = [])
+    public function request($method, $ref, &$accessToken, $options = [])
     {
         if ($accessToken->hasExpired()) {
             $accessToken = $this->getAccessToken('refresh_token', [
