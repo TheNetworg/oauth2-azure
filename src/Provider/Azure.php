@@ -20,7 +20,6 @@ class Azure extends AbstractProvider
     public $resource = null;
     
     protected $audience = null;
-    protected $validateIssuer = true;
     protected $isApi = false;
     
     protected $responseType = 'code';
@@ -30,9 +29,6 @@ class Azure extends AbstractProvider
 
     public function __construct(array $options = [], array $collaborators = [])
     {
-        if(isset($options['validateIssuer'])) {
-            $this->validateIssuer = $options['validateIssuer'];
-        }
         if(isset($options['metadata'])) {
             $this->metadata = $options['metadata'];
         }
@@ -313,14 +309,6 @@ class Azure extends AbstractProvider
         if($tokenClaims['nbf'] > time() || $tokenClaims['exp'] < time()) {
             // Additional validation is being performed in firebase/JWT itself
             throw new \RuntimeException("The id_token is invalid!");
-        }
-        
-        if($this->validateIssuer) {
-            if(strpos($this->metadata, "common") === FALSE) {
-                if($tokenClaims['iss'] != $this->openIdConfiguration['issuer']) {
-                    throw new \RuntimeException("Invalid token issuer!");
-                }
-            }
         }
         
         return $tokenClaims;
