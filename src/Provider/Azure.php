@@ -267,7 +267,7 @@ class Azure extends AbstractProvider
      */
     public function getLogoutUrl($post_logout_redirect_uri = null)
     {
-        $url = $this->openIdConfiguration['token_endpoint'];
+        $url = $this->openIdConfiguration['end_session_endpoint'];
         if($post_logout_redirect_uri) {
             if(strpos($url, '?') !== FALSE) $url .= "&";
             else $url .= "?";
