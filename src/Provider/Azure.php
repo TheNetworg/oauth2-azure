@@ -152,8 +152,10 @@ class Azure extends AbstractProvider
                 $ref = $tenant."/".$ref;
             }
             
-        	$response = $this->get($ref, $accessToken, $headers);
-            foreach ($response as $value) {
+        	$response = $this->request('get', $ref, $accessToken, ['headers' => $headers]);
+            $values = $response;
+            if(isset($response['value'])) $values = $response['value'];
+            foreach ($values as $value) {
                 $objects[] = $value;
             }
 			if (isset($response['odata.nextLink'])) {
