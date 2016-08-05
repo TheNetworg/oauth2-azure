@@ -103,14 +103,16 @@ class Azure extends AbstractProvider
     {
         $objects = [];
         
-        if (filter_var($ref, FILTER_VALIDATE_URL) === FALSE) {
-            $ref = $tenant."/".$ref;
-        }
-        
         $response = null;
 		do {
-        	$response = $this->get($ref, $accessToken, $headers);
-            foreach ($response as $value) {
+            if (filter_var($ref, FILTER_VALIDATE_URL) === FALSE) {
+                $ref = $tenant."/".$ref;
+            }
+            
+        	$response = $this->request('get', $ref, $accessToken, ['headers' => $headers]);
+            $values = $response;
+            if(isset($response['value'])) $values = $response['value'];
+            foreach ($values as $value) {
                 $objects[] = $value;
             }
 			if (isset($response['odata.nextLink'])) {
