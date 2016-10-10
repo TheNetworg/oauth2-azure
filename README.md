@@ -64,7 +64,8 @@ if (!isset($_GET['code'])) {
 
     // Try to get an access token (using the authorization code grant)
     $token = $provider->getAccessToken('authorization_code', [
-        'code' => $_GET['code']
+        'code' => $_GET['code'],
+        'resource' => 'https://graph.windows.net',
     ]);
 
     // Optional: Now you have a token you can look up a users profile data
