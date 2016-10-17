@@ -10,6 +10,7 @@ use TheNetworg\OAuth2\Client\Grant\JwtBearer;
 use TheNetworg\OAuth2\Client\Token\AccessToken;
 use Psr\Http\Message\ResponseInterface;
 use \Firebase\JWT\JWT;
+use phpseclib\Crypt\RSA;
 
 class Azure extends AbstractProvider
 {
@@ -147,26 +148,26 @@ class Azure extends AbstractProvider
         $objects = [];
         
         $response = null;
-		do {
+        do {
             if (filter_var($ref, FILTER_VALIDATE_URL) === FALSE) {
                 $ref = $tenant."/".$ref;
             }
             
-        	$response = $this->request('get', $ref, $accessToken, ['headers' => $headers]);
+            $response = $this->request('get', $ref, $accessToken, ['headers' => $headers]);
             $values = $response;
             if(isset($response['value'])) $values = $response['value'];
             foreach ($values as $value) {
                 $objects[] = $value;
             }
-			if (isset($response['odata.nextLink'])) {
+            if (isset($response['odata.nextLink'])) {
                 $ref = $response['odata.nextLink'];
             } elseif (isset($response['@odata.nextLink'])) {
                 $ref = $response['@odata.nextLink'];
             }
-			else {
-				$ref = null;
-			}
-		} while ($ref != null);
+            else {
+                $ref = null;
+            }
+        } while ($ref != null);
         
         return $objects;
     }
@@ -339,9 +340,14 @@ class Azure extends AbstractProvider
         $response = $this->getResponse($request);
         
         $keys = [];
-        foreach ($response['keys'] as $i => $keyinfo) {
-            if(isset($keyinfo['kty']) && $keyinfo['kty'] == "RSA") {
-                $keys[$keyinfo['kid']] = (string)\JOSE_JWK::decode($keyinfo);
+        foreach ($response['keys'] as $i => $key) {
+            if(isset($key['kty']) && $key['kty'] == "RSA") {
+                $rsa = new RSA();
+                $rsa->setPublicKey('<RSAKeyValue>
+                    <Modulus>' . $key['n'] . '</Modulus>
+                    <Exponent>' . $key['e'] . '</Exponent>
+                    </RSAKeyValue>');
+                $keys[$key['kid']] = $rsa->getPublicKey();
             }
             else if (isset($keyinfo['x5c']) && is_array($keyinfo['x5c'])) {
                 foreach ($keyinfo['x5c'] as $encodedkey) {
