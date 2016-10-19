@@ -326,6 +326,10 @@ class Azure extends AbstractProvider
         
         return $response;
     }
+
+    private function convert_base64url_to_base64($data) {
+		return str_pad(strtr($data, '-_', '+/'), strlen($data) % 4, '=', STR_PAD_RIGHT);
+	}
     
     /**
      * Get JWT verification keys from Azure Active Directory.
@@ -344,8 +348,8 @@ class Azure extends AbstractProvider
             if(isset($key['kty']) && $key['kty'] == "RSA") {
                 $rsa = new RSA();
                 $rsa->setPublicKey('<RSAKeyValue>
-                    <Modulus>' . $key['n'] . '</Modulus>
-                    <Exponent>' . $key['e'] . '</Exponent>
+                    <Modulus>' . $this->convert_base64url_to_base64($key['n']) . '</Modulus>
+                    <Exponent>' . $this->convert_base64url_to_base64($key['e']) . '</Exponent>
                     </RSAKeyValue>');
                 $keys[$key['kid']] = $rsa->getPublicKey();
             }
