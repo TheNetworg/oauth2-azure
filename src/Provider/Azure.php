@@ -236,7 +236,7 @@ class Azure extends AbstractProvider
         $keys = $this->getJwtVerificationKeys();
         $tokenClaims = (array)JWT::decode($accessToken, $keys, ['RS256']);
         
-        if($provider->getClientId() != $tokenClaims['aud']) {
+        if($this->getClientId() != $tokenClaims['aud']) {
             throw new RuntimeException("The audience is invalid!");
         }
         if($tokenClaims['nbf'] > time() || $tokenClaims['exp'] < time()) {
@@ -244,16 +244,16 @@ class Azure extends AbstractProvider
             throw new RuntimeException("The id_token is invalid!");
         }
         
-        if($provider->tenant == "common") {
-            $provider->tenant = $tokenClaims['tid'];
+        if($this->tenant == "common") {
+            $this->tenant = $tokenClaims['tid'];
             
-            $tenant = $provider->getTenantDetails($provider->tenant);
+            $tenant = $this->getTenantDetails($this->tenant);
             if($tokenClaims['iss'] != $tenant['issuer']) {
                 throw new RuntimeException("Invalid token issuer!");
             }
         }
         else {
-            $tenant = $provider->getTenantDetails($provider->tenant);
+            $tenant = $this->getTenantDetails($this->tenant);
             if($tokenClaims['iss'] != $tenant['issuer']) {
                 throw new RuntimeException("Invalid token issuer!");
             }
