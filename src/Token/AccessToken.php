@@ -28,8 +28,10 @@ class AccessToken extends \League\OAuth2\Client\Token\AccessToken
                 }
                 else {
                     // The id_token is unsigned (coming from v1.0 endpoint) - https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx
-                    // Validate the access_token signature first by parsing it as JWT into claims
-                    $accessTokenClaims = (array)JWT::decode($options['access_token'], $keys, ['RS256']);
+                    
+                    // Since idToken is not signed, we just do OAuth2 flow without validating the id_token
+                    // // Validate the access_token signature first by parsing it as JWT into claims
+                    // $accessTokenClaims = (array)JWT::decode($options['access_token'], $keys, ['RS256']);
                     // Then parse the idToken claims only without validating the signature
                     $idTokenClaims = (array)JWT::jsonDecode(JWT::urlsafeB64Decode($tks[1]));
                 }
