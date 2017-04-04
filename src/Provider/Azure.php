@@ -191,7 +191,7 @@ class Azure extends AbstractProvider
         }
 
         $request = $this->getAuthenticatedRequest($method, $url, $accessToken, $options);
-        $response = $this->getResponse($request);
+        $response = $this->getParsedResponse($request);
 
         return $response;
     }
@@ -272,7 +272,7 @@ class Azure extends AbstractProvider
         $factory = $this->getRequestFactory();
         $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/common/discovery/keys', []);
         
-        $response = $this->getResponse($request);
+        $response = $this->getParsedResponse($request);
         
         $keys = [];
         foreach ($response['keys'] as $i => $keyinfo) {
@@ -301,7 +301,7 @@ class Azure extends AbstractProvider
         $factory = $this->getRequestFactory();
         $request = $factory->getRequestWithOptions('get', 'https://login.windows.net/'.$tenant.'/.well-known/openid-configuration', []);
         
-        $response = $this->getResponse($request);
+        $response = $this->getParsedResponse($request);
         
         return $response;
     }
