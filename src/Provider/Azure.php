@@ -172,16 +172,11 @@ class Azure extends AbstractProvider
         }
 
         $url = null;
-	    
-	
-        // common is default tenant
-        $tenant = 'common';
         
-        // if tenant is set as option, add it to the url
+        // if tenant is set as option, add it to the url.
         if (property_exists($this, 'tenant')) {
-            $tenant = $this->tenant;
+            $ref = sprintf('%s/%s', $this->tenant, $ref);
         }
-        $ref = sprintf('%s/%s', $tenant, $ref);
 	    
         if (filter_var($ref, FILTER_VALIDATE_URL) !== FALSE) {
             $url = $ref;
