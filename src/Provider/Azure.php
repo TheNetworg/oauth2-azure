@@ -172,6 +172,12 @@ class Azure extends AbstractProvider
         }
 
         $url = null;
+        
+        // if tenant is set as option, add it to the url.
+        if (property_exists($this, 'tenant')) {
+            $ref = sprintf('%s/%s', $this->tenant, $ref);
+        }
+	    
         if (filter_var($ref, FILTER_VALIDATE_URL) !== FALSE) {
             $url = $ref;
         } else {
@@ -236,12 +242,12 @@ class Azure extends AbstractProvider
         $keys = $this->getJwtVerificationKeys();
         $tokenClaims = (array)JWT::decode($accessToken, $keys, ['RS256']);
         
-        if($this->getClientId() != $tokenClaims['aud']) {
-            throw new RuntimeException("The audience is invalid!");
+        if ($this->getClientId() != $tokenClaims['aud'] && $this->getClientId() != $tokenClaims['appid']) {
+            throw new \RuntimeException("The client_id / audience is invalid!");
         }
         if($tokenClaims['nbf'] > time() || $tokenClaims['exp'] < time()) {
             // Additional validation is being performed in firebase/JWT itself
-            throw new RuntimeException("The id_token is invalid!");
+            throw new \RuntimeException("The id_token is invalid!");
         }
         
         if($this->tenant == "common") {
@@ -249,13 +255,13 @@ class Azure extends AbstractProvider
             
             $tenant = $this->getTenantDetails($this->tenant);
             if($tokenClaims['iss'] != $tenant['issuer']) {
-                throw new RuntimeException("Invalid token issuer!");
+                throw new \RuntimeException("Invalid token issuer!");
             }
         }
         else {
             $tenant = $this->getTenantDetails($this->tenant);
             if($tokenClaims['iss'] != $tenant['issuer']) {
-                throw new RuntimeException("Invalid token issuer!");
+                throw new \RuntimeException("Invalid token issuer!");
             }
         }
         
