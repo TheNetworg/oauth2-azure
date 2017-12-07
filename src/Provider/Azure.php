@@ -236,8 +236,8 @@ class Azure extends AbstractProvider
         $keys = $this->getJwtVerificationKeys();
         $tokenClaims = (array)JWT::decode($accessToken, $keys, ['RS256']);
         
-        if($this->getClientId() != $tokenClaims['aud']) {
-            throw new \RuntimeException("The audience is invalid!");
+        if ($this->getClientId() != $tokenClaims['aud'] && $this->getClientId() != $tokenClaims['appid']) {
+            throw new \RuntimeException("The client_id / audience is invalid!");
         }
         if($tokenClaims['nbf'] > time() || $tokenClaims['exp'] < time()) {
             // Additional validation is being performed in firebase/JWT itself
