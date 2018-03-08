@@ -61,6 +61,8 @@ class Azure extends AbstractProvider
                 $message = $data['odata.error']['message']['value'];
             } elseif (isset($data['error']['message'])) {
                 $message = $data['error']['message'];
+            } elseif ( isset($data['error']) && !is_array( $data['error'] )){
+                $message = $data['error'];
             } else {
                 $message = $response->getReasonPhrase();
             }
