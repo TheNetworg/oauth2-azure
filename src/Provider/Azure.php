@@ -20,7 +20,7 @@ class Azure extends AbstractProvider
     public $pathToken = "/oauth2/token";
     
     public $scope = [];
-    public $scopeSeparator = ",";
+    public $scopeSeparator = " ";
 
     public $tenant = "common";
 
