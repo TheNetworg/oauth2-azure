@@ -20,6 +20,7 @@ class Azure extends AbstractProvider
     public $pathToken = "/oauth2/token";
     
     public $scope = [];
+    public $scopeSeparator = " ";
 
     public $tenant = "common";
 
@@ -78,6 +79,11 @@ class Azure extends AbstractProvider
     protected function getDefaultScopes()
     {
         return $this->scope;
+    }
+
+    protected function getScopeSeparator()
+    {
+        return $this->scopeSeparator;
     }
     
     protected function createAccessToken(array $response, AbstractGrant $grant)
