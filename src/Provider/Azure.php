@@ -285,12 +285,29 @@ class Azure extends AbstractProvider
     public function validateToken($token)
     {
         $keys = $this->getJwtVerificationKeys($this->openIdConfiguration['jwks_uri']);
-        $tokenClaims = null;
-        try {
-            $tokenClaims = (array)JWT::decode($token, $keys, ['RS256']);
-        }  catch (JWT_Exception $e) {
-            throw new \RuntimeException("Unable to parse the id_token!");
-        }
+
+        $jwt = null;
+        $last_exception = null;
+        foreach ($response['keys'] as $i => $key) {
+            try {
+				if ( null == $key->x5c ) {
+					throw new \RuntimeException( 'key does not contain the x5c attribute' );
+				}
+				$key_der = $key->x5c[0];
+				$key_pem = chunk_split( $key_der, 64, "\n" );
+				$key_pem = "-----BEGIN CERTIFICATE-----\n"
+				            . $key_pem
+				            . "-----END CERTIFICATE-----\n";
+				$jwt = JWT::decode( $id_token, $key_pem, self::$allowed_algorithms );
+				break;
+			} catch ( Exception $e ) {
+				$last_exception = $e;
+			}
+		}
+		if ( null == $jwt ) {
+			throw $last_exception;
+		}
+        
         if($this->audience && $this->audience != $tokenClaims['aud']) {
             throw new \RuntimeException("The audience is invalid!");
         }
@@ -328,26 +345,6 @@ class Azure extends AbstractProvider
         
         $response = $this->getResponse($request);
         
-        $keys = [];
-        foreach ($response['keys'] as $i => $key) {
-            if(isset($key['kty']) && $key['kty'] == "RSA") {
-                $rsa = new RSA();
-                $rsa->setPublicKey('<RSAKeyValue>
-                    <Modulus>' . $this->convert_base64url_to_base64($key['n']) . '</Modulus>
-                    <Exponent>' . $this->convert_base64url_to_base64($key['e']) . '</Exponent>
-                    </RSAKeyValue>');
-                $keys[$key['kid']] = $rsa->getPublicKey();
-            }
-            else if (isset($keyinfo['x5c']) && is_array($keyinfo['x5c'])) {
-                foreach ($keyinfo['x5c'] as $encodedkey) {
-                    $key = "-----BEGIN CERTIFICATE-----\n";
-                    $key .= wordwrap($encodedkey, 64, "\n", true);
-                    $key .= "\n-----END CERTIFICATE-----";
-                    $keys[$keyinfo['kid']] = $key;
-                }
-            }
-        }
-        
-        return $keys;
+        return $response;
     }
 }
