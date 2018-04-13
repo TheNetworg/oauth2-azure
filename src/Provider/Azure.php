@@ -10,7 +10,6 @@ use TheNetworg\OAuth2\Client\Grant\JwtBearer;
 use TheNetworg\OAuth2\Client\Token\AccessToken;
 use Psr\Http\Message\ResponseInterface;
 use \Firebase\JWT\JWT;
-use phpseclib\Crypt\RSA;
 
 class Azure extends AbstractProvider
 {
