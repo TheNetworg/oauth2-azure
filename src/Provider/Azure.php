@@ -280,47 +280,42 @@ class Azure extends AbstractProvider
     }
     
     /**
-     * Validate the access token you received in your application.
+     * Validate the ID token you received in your application.
      *
-     * @input $accessToken string The access token you received in the authorization header.
+     * @input $id_token string The ID token you received in the authorization header.
      *
      * @return array
      */
-    public function validateToken($token)
+    public function validateToken($id_token)
     {
-        $keys = $this->getJwtVerificationKeys($this->openIdConfiguration['jwks_uri']);
-
+        $jwks = $this->getJwtVerificationKeys($this->openIdConfiguration['jwks_uri']);
         $jwt = null;
         $last_exception = null;
-        foreach ($response['keys'] as $i => $key) {
+
+        foreach ($jwks['keys'] as $i => $key) {
             try {
-				if ( null == $key->x5c ) {
-					throw new \RuntimeException( 'key does not contain the x5c attribute' );
-				}
-				$key_der = $key->x5c[0];
-				$key_pem = chunk_split( $key_der, 64, "\n" );
-				$key_pem = "-----BEGIN CERTIFICATE-----\n"
-				            . $key_pem
-				            . "-----END CERTIFICATE-----\n";
-				$jwt = JWT::decode( $id_token, $key_pem, self::$allowed_algorithms );
-				break;
-			} catch ( Exception $e ) {
-				$last_exception = $e;
-			}
-		}
-		if ( null == $jwt ) {
-			throw $last_exception;
-		}
-        
-        if($this->audience && $this->audience != $tokenClaims['aud']) {
+				        if ( null == $key['x5c'] ) {
+					          throw new \RuntimeException( 'key does not contain the x5c attribute' );
+				        }
+								$key_der = $key['x5c'][0];
+				        $key_pem = chunk_split( $key_der, 64, "\n" );
+				        $key_pem = "-----BEGIN CERTIFICATE-----\n" . $key_pem  . "-----END CERTIFICATE-----\n";
+				        $jwt = (array) JWT::decode( $id_token, $key_pem, array('HS256','HS384','HS512','RS256'));
+				        break;
+			      } catch ( Exception $e ) {
+				        $last_exception = $e;
+			      }
+		    }
+		    if ( null == $jwt ) {
+			      throw $last_exception;
+		    }
+        if ($this->audience && $this->audience != $jwt['aud']) {
             throw new \RuntimeException("The audience is invalid!");
         }
-        if($tokenClaims['nbf'] > time() || $tokenClaims['exp'] < time()) {
-            // Additional validation is being performed in firebase/JWT itself
-            throw new \RuntimeException("The id_token is invalid!");
+        if ($this->openIdConfiguration['issuer'] != $jwt['iss']) {
+            throw new \RuntimeException("The security token service is invalid!");
         }
-        
-        return $tokenClaims;
+        return $jwt;
     }
 
     /**
