@@ -111,6 +111,11 @@ class Azure extends AbstractProvider
     {
         return [];
     }
+
+  	protected function getScopeSeparator()
+  	{
+  		return ' ';
+  	}
     
     protected function createAccessToken(array $response, AbstractGrant $grant)
     {
