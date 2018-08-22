@@ -317,7 +317,12 @@ class Azure extends AbstractProvider
         
         return $tokenClaims;
     }
-    
+
+    /**
+	   * Get OAuth2 URLs from Azure Active Directory.
+	   *
+	   * @return array
+	   */
     public function getOpenIdConfiguration($metadata)
     {
         $factory = $this->getRequestFactory();
@@ -325,7 +330,7 @@ class Azure extends AbstractProvider
         
         $response = $this->getResponse($request);
         
-        return $response;
+        return json_decode($response->getBody(),true);
     }
 
     private function convert_base64url_to_base64($data) {
@@ -344,6 +349,6 @@ class Azure extends AbstractProvider
         
         $response = $this->getResponse($request);
         
-        return $response;
+        return json_decode($response->getBody(),true);
     }
 }
