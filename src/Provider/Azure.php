@@ -290,17 +290,21 @@ class Azure extends AbstractProvider
         $jwks = $this->getJwtVerificationKeys($this->openIdConfiguration['jwks_uri']);
         $jwt = null;
         $last_exception = null;
+        $token_array = explode('.', $id_token);
+        $header = json_decode(base64_decode($token_array[0]),true);
 
-        foreach ($jwks['keys'] as $i => $key) {
+        foreach ($jwks['keys'] as $key) {
             try {
-                if (null == $key['x5c']) {
-                    throw new \RuntimeException('key does not contain the x5c attribute');
+                if ($key['kid'] == $header['kid']) {
+                    if (null == $key['x5c']) {
+                        throw new \RuntimeException('key does not contain the x5c attribute');
+                    }
+                    $key_der = $key['x5c'][0];
+                    $key_pem = chunk_split($key_der, 64, "\n");
+                    $key_pem = "-----BEGIN CERTIFICATE-----\n" . $key_pem . "-----END CERTIFICATE-----\n";
+                    $jwt = (array)JWT::decode($id_token, $key_pem, array('HS256', 'HS384', 'HS512', 'RS256'));
+                    break;
                 }
-                $key_der = $key['x5c'][0];
-                $key_pem = chunk_split($key_der, 64, "\n");
-                $key_pem = "-----BEGIN CERTIFICATE-----\n" . $key_pem . "-----END CERTIFICATE-----\n";
-                $jwt = (array)JWT::decode($id_token, $key_pem, array('HS256', 'HS384', 'HS512', 'RS256'));
-                break;
             } catch (Exception $e) {
                 $last_exception = $e;
             }
