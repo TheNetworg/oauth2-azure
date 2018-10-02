@@ -90,7 +90,7 @@ if (!isset($_GET['code'])) {
 
 #### Advanced flow
 
-The [Authorization Code Grant Flow](https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx) is a little bit different for Azure Active Directory. Instead of scopes, you specify the resource which you would like to access - there is a param `$provider->authWithResource` which will automatically populate the `resource` param of request with the value of either `$provider->resource` or `$provider->urlAPI`. This feature is mostly intended for v2.0 endpoint of Azure AD (see more [here](https://azure.microsoft.com/en-us/documentation/articles/active-directory-v2-compare/#scopes-not-resources)).
+The [Authorization Code Grant Flow](https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx) is a little bit different for Azure Active Directory. Instead of scopes, you specify the resource which you would like to access - there is a param `$provider->authWithResource` which will automatically populate the `resource` param of request with the value of either `$provider->resource` or `$provider->urlAPI`. This feature is mostly intended for v2.0 endpoint of Azure AD (see more [here](https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison#scopes-not-resources)).
 
 #### Using custom parameters
 
