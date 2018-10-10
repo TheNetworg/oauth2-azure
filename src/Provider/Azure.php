@@ -190,6 +190,8 @@ class Azure extends AbstractProvider
                 }
                 $ref = "$tenant/$ref";
 
+                $url = $this->urlAPI.$ref;
+
                 $url .= (strrpos($url, "?") === false) ? "?" : "&";
                 $url .= "api-version=".$this->API_VERSION;
             }
