@@ -183,12 +183,14 @@ class Azure extends AbstractProvider
         if (filter_var($ref, FILTER_VALIDATE_URL) !== FALSE) {
             $url = $ref;
         } else {
-            if (strpos($this->urlAPI, "graph.windows.net") === TRUE) {
+            if (strpos($this->urlAPI, "graph.windows.net") !== FALSE) {
                 $tenant = 'common';
                 if (property_exists($this, 'tenant')) {
                     $tenant = $this->tenant;
                 }
                 $ref = "$tenant/$ref";
+
+                $url = $this->urlAPI.$ref;
 
                 $url .= (strrpos($url, "?") === false) ? "?" : "&";
                 $url .= "api-version=".$this->API_VERSION;
