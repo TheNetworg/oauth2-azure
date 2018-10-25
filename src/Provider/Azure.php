@@ -183,21 +183,21 @@ class Azure extends AbstractProvider
         $url = null;
         if (filter_var($ref, FILTER_VALIDATE_URL) !== false) {
             $url = $ref;
-        } else {
-            if (strpos($this->urlAPI, "graph.windows.net") !== false) {
-                $tenant = 'common';
-                if (property_exists($this, 'tenant')) {
-                    $tenant = $this->tenant;
-                }
-                $ref = "$tenant/$ref";
-
-                $url = $this->urlAPI . $ref;
-
-                $url .= (strrpos($url, "?") === false) ? "?" : "&";
-                $url .= "api-version=" . $this->API_VERSION;
-            } else {
-                $url = $this->urlAPI . $ref;
+        } elseif (strpos($this->urlAPI, "graph.windows.net") !== false) {
+            $tenant = 'common';
+            if (property_exists($this, 'tenant')) {
+                $tenant = $this->tenant;
             }
+            $ref = "$tenant/$ref";
+
+            $url = $this->urlAPI . $ref;
+        } else {
+            $url = $this->urlAPI . $ref;
+        }
+
+        if (strpos($url, 'api-version') === false) {
+            $url .= (strpos($url, '?') === false) ? '?' : '&';
+            $url .= 'api-version=' . $this->API_VERSION;
         }
 
         if (isset($options['body']) && (gettype($options['body']) == 'array' || gettype($options['body']) == 'object')) {
