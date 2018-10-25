@@ -2,69 +2,68 @@
 
 namespace TheNetworg\OAuth2\Client\Token;
 
+use Firebase\JWT\JWT;
 use InvalidArgumentException;
-use RuntimeException;
 use League\OAuth2\Client\Tool\RequestFactory;
-use \Firebase\JWT\JWT;
+use RuntimeException;
 
 class AccessToken extends \League\OAuth2\Client\Token\AccessToken
 {
     protected $idToken;
+
     protected $idTokenClaims;
-    
-    public function __construct(array $options = [], $provider)
+
+    public function __construct(array $options, $provider)
     {
         parent::__construct($options);
         if (!empty($options['id_token'])) {
             $this->idToken = $options['id_token'];
-            
-            $keys = $provider->getJwtVerificationKeys();
+
+            $keys          = $provider->getJwtVerificationKeys();
             $idTokenClaims = null;
             try {
                 $tks = explode('.', $this->idToken);
                 // Check if the id_token contains signature
-                if(count($tks) == 3 && !empty($tks[2])) {
+                if (3 == count($tks) && !empty($tks[2])) {
                     $idTokenClaims = (array)JWT::decode($this->idToken, $keys, ['RS256']);
-                }
-                else {
+                } else {
                     // The id_token is unsigned (coming from v1.0 endpoint) - https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx
-                    
+
                     // Since idToken is not signed, we just do OAuth2 flow without validating the id_token
                     // // Validate the access_token signature first by parsing it as JWT into claims
                     // $accessTokenClaims = (array)JWT::decode($options['access_token'], $keys, ['RS256']);
                     // Then parse the idToken claims only without validating the signature
                     $idTokenClaims = (array)JWT::jsonDecode(JWT::urlsafeB64Decode($tks[1]));
                 }
-            }  catch (JWT_Exception $e) {
-                throw new RuntimeException("Unable to parse the id_token!");
+            } catch (JWT_Exception $e) {
+                throw new RuntimeException('Unable to parse the id_token!');
             }
-            if($provider->getClientId() != $idTokenClaims['aud']) {
-                throw new RuntimeException("The audience is invalid!");
+            if ($provider->getClientId() != $idTokenClaims['aud']) {
+                throw new RuntimeException('The audience is invalid!');
             }
-            if($idTokenClaims['nbf'] > time() || $idTokenClaims['exp'] < time()) {
+            if ($idTokenClaims['nbf'] > time() || $idTokenClaims['exp'] < time()) {
                 // Additional validation is being performed in firebase/JWT itself
-                throw new RuntimeException("The id_token is invalid!");
+                throw new RuntimeException('The id_token is invalid!');
             }
-            
-            if($provider->tenant == "common") {
+
+            if ('common' == $provider->tenant) {
                 $provider->tenant = $idTokenClaims['tid'];
-                
+
                 $tenant = $provider->getTenantDetails($provider->tenant);
-                if($idTokenClaims['iss'] != $tenant['issuer']) {
-                    throw new RuntimeException("Invalid token issuer!");
+                if ($idTokenClaims['iss'] != $tenant['issuer']) {
+                    throw new RuntimeException('Invalid token issuer!');
+                }
+            } else {
+                $tenant = $provider->getTenantDetails($provider->tenant);
+                if ($idTokenClaims['iss'] != $tenant['issuer']) {
+                    throw new RuntimeException('Invalid token issuer!');
                 }
             }
-            else {
-                $tenant = $provider->getTenantDetails($provider->tenant);
-                if($idTokenClaims['iss'] != $tenant['issuer']) {
-                    throw new RuntimeException("Invalid token issuer!");
-                }
-            }
-            
+
             $this->idTokenClaims = $idTokenClaims;
         }
     }
-    
+
     public function getIdTokenClaims()
     {
         return $this->idTokenClaims;

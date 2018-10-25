@@ -16,7 +16,7 @@ class AzureResourceOwner implements ResourceOwnerInterface
     /**
      * Creates new azure resource owner.
      *
-     * @param array  $data
+     * @param array $data
      */
     public function __construct($data = [])
     {
@@ -32,7 +32,7 @@ class AzureResourceOwner implements ResourceOwnerInterface
     {
         return $this->claim('oid');
     }
-    
+
     /**
      * Retrieves first name of resource owner.
      *
@@ -42,7 +42,7 @@ class AzureResourceOwner implements ResourceOwnerInterface
     {
         return $this->claim('given_name');
     }
-    
+
     /**
      * Retrieves last name of resource owner.
      *
@@ -52,7 +52,7 @@ class AzureResourceOwner implements ResourceOwnerInterface
     {
         return $this->claim('family_name');
     }
-    
+
     /**
      * Retrieves user principal name of resource owner.
      *
@@ -62,7 +62,7 @@ class AzureResourceOwner implements ResourceOwnerInterface
     {
         return $this->claim('upn');
     }
-    
+
     /**
      * Retrieves tenant id of resource owner.
      *
@@ -72,7 +72,7 @@ class AzureResourceOwner implements ResourceOwnerInterface
     {
         return $this->claim('tid');
     }
-    
+
     /**
      * Returns a field from the parsed JWT data.
      *
@@ -84,7 +84,7 @@ class AzureResourceOwner implements ResourceOwnerInterface
     {
         return isset($this->data[$name]) ? $this->data[$name] : null;
     }
-    
+
     /**
      * Returns all the data obtained about the user.
      *
