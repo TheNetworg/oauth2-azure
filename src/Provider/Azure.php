@@ -2,39 +2,43 @@
 
 namespace TheNetworg\OAuth2\Client\Provider;
 
+use Firebase\JWT\JWT;
+use League\OAuth2\Client\Grant\AbstractGrant;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
-use League\OAuth2\Client\Grant\AbstractGrant;
+use Psr\Http\Message\ResponseInterface;
 use TheNetworg\OAuth2\Client\Grant\JwtBearer;
 use TheNetworg\OAuth2\Client\Token\AccessToken;
-use Psr\Http\Message\ResponseInterface;
-use \Firebase\JWT\JWT;
 
 class Azure extends AbstractProvider
 {
     use BearerAuthorizationTrait;
 
-    public $urlLogin = "https://login.microsoftonline.com/";
-    public $pathAuthorize = "/oauth2/authorize";
-    public $pathToken = "/oauth2/token";
+    public $urlLogin = 'https://login.microsoftonline.com/';
+
+    public $pathAuthorize = '/oauth2/authorize';
+
+    public $pathToken = '/oauth2/token';
 
     public $scope = [];
-    public $scopeSeparator = " ";
 
-    public $tenant = "common";
+    public $scopeSeparator = ' ';
 
-    public $urlAPI = "https://graph.windows.net/";
-    public $resource = "";
+    public $tenant = 'common';
 
-    public $API_VERSION = "1.6";
+    public $urlAPI = 'https://graph.windows.net/';
+
+    public $resource = '';
+
+    public $API_VERSION = '1.6';
 
     public $authWithResource = true;
 
     public function __construct(array $options = [], array $collaborators = [])
     {
         parent::__construct($options, $collaborators);
-        $this->grantFactory->setGrant('jwt_bearer', new JwtBearer);
+        $this->grantFactory->setGrant('jwt_bearer', new JwtBearer());
     }
 
     public function getBaseAuthorizationUrl()
@@ -55,42 +59,6 @@ class Azure extends AbstractProvider
         return parent::getAccessToken($grant, $options);
     }
 
-    protected function checkResponse(ResponseInterface $response, $data)
-    {
-        if (isset($data['odata.error']) || isset($data['error'])) {
-            if (isset($data['odata.error']['message']['value'])) {
-                $message = $data['odata.error']['message']['value'];
-            } elseif (isset($data['error']['message'])) {
-                $message = $data['error']['message'];
-            } elseif (isset($data['error']) && !is_array($data['error'])) {
-                $message = $data['error'];
-            } else {
-                $message = $response->getReasonPhrase();
-            }
-
-            throw new IdentityProviderException(
-                $message,
-                $response->getStatusCode(),
-                $response
-            );
-        }
-    }
-
-    protected function getDefaultScopes()
-    {
-        return $this->scope;
-    }
-
-    protected function getScopeSeparator()
-    {
-        return $this->scopeSeparator;
-    }
-
-    protected function createAccessToken(array $response, AbstractGrant $grant)
-    {
-        return new AccessToken($response, $this);
-    }
-
     public function getResourceOwner(\League\OAuth2\Client\Token\AccessToken $token)
     {
         $data = $token->getIdTokenClaims();
@@ -99,12 +67,6 @@ class Azure extends AbstractProvider
 
     public function getResourceOwnerDetailsUrl(\League\OAuth2\Client\Token\AccessToken $token)
     {
-        return null;
-    }
-
-    protected function createResourceOwner(array $response, \League\OAuth2\Client\Token\AccessToken $token)
-    {
-        return new AzureResourceOwner($response);
     }
 
     public function getObjects($tenant, $ref, &$accessToken, $headers = [])
@@ -113,12 +75,12 @@ class Azure extends AbstractProvider
 
         $response = null;
         do {
-            if (filter_var($ref, FILTER_VALIDATE_URL) === false) {
-                $ref = $tenant . "/" . $ref;
+            if (false === filter_var($ref, FILTER_VALIDATE_URL)) {
+                $ref = $tenant . '/' . $ref;
             }
 
             $response = $this->request('get', $ref, $accessToken, ['headers' => $headers]);
-            $values = $response;
+            $values   = $response;
             if (isset($response['value'])) {
                 $values = $response['value'];
             }
@@ -132,7 +94,7 @@ class Azure extends AbstractProvider
             } else {
                 $ref = null;
             }
-        } while ($ref != null);
+        } while (null != $ref);
 
         return $objects;
     }
@@ -176,50 +138,39 @@ class Azure extends AbstractProvider
     {
         if ($accessToken->hasExpired()) {
             $accessToken = $this->getAccessToken('refresh_token', [
-                'refresh_token' => $accessToken->getRefreshToken()
+                'refresh_token' => $accessToken->getRefreshToken(),
             ]);
         }
 
         $url = null;
-        if (filter_var($ref, FILTER_VALIDATE_URL) !== false) {
+        if (false !== filter_var($ref, FILTER_VALIDATE_URL)) {
             $url = $ref;
-        } elseif (strpos($this->urlAPI, "graph.windows.net") !== false) {
-            $tenant = 'common';
-            if (property_exists($this, 'tenant')) {
-                $tenant = $this->tenant;
-            }
-            $ref = "$tenant/$ref";
-
-            $url = $this->urlAPI . $ref;
-
-            if (strpos($url, 'api-version') === false) {
-                $url .= (strpos($url, '?') === false) ? '?' : '&';
-                $url .= 'api-version=' . $this->API_VERSION;
-            }
         } else {
-            $url = $this->urlAPI . $ref;
+            if (false !== strpos($this->urlAPI, 'graph.windows.net')) {
+                $tenant = 'common';
+                if (property_exists($this, 'tenant')) {
+                    $tenant = $this->tenant;
+                }
+                $ref = "$tenant/$ref";
+
+                $url = $this->urlAPI . $ref;
+
+                $url .= (false === strrpos($url, '?')) ? '?' : '&';
+                $url .= 'api-version=' . $this->API_VERSION;
+            } else {
+                $url = $this->urlAPI . $ref;
+            }
         }
 
-        if (isset($options['body']) && (gettype($options['body']) == 'array' || gettype($options['body']) == 'object')) {
+        if (isset($options['body']) && ('array' == gettype($options['body']) || 'object' == gettype($options['body']))) {
             $options['body'] = json_encode($options['body']);
         }
         if (!isset($options['headers']['Content-Type']) && isset($options['body'])) {
             $options['headers']['Content-Type'] = 'application/json';
         }
 
-        $request = $this->getAuthenticatedRequest($method, $url, $accessToken, $options);
+        $request  = $this->getAuthenticatedRequest($method, $url, $accessToken, $options);
         $response = $this->getParsedResponse($request);
-
-        return $response;
-    }
-
-    private function wrapResponse($response)
-    {
-        if (empty($response)) {
-            return null;
-        } elseif (isset($response['value'])) {
-            return $response['value'];
-        }
 
         return $response;
     }
@@ -232,7 +183,7 @@ class Azure extends AbstractProvider
     /**
      * Obtain URL for logging out the user.
      *
-     * @input $post_logout_redirect_uri string The URL which the user should be redirected to after logout
+     * @param $post_logout_redirect_uri string The URL which the user should be redirected to after logout
      *
      * @return string
      */
@@ -244,34 +195,34 @@ class Azure extends AbstractProvider
     /**
      * Validate the access token you received in your application.
      *
-     * @input $accessToken string The access token you received in the authorization header.
+     * @param $accessToken string The access token you received in the authorization header.
      *
      * @return array
      */
     public function validateAccessToken($accessToken)
     {
-        $keys = $this->getJwtVerificationKeys();
+        $keys        = $this->getJwtVerificationKeys();
         $tokenClaims = (array)JWT::decode($accessToken, $keys, ['RS256']);
 
         if ($this->getClientId() != $tokenClaims['aud'] && $this->getClientId() != $tokenClaims['appid']) {
-            throw new \RuntimeException("The client_id / audience is invalid!");
+            throw new \RuntimeException('The client_id / audience is invalid!');
         }
         if ($tokenClaims['nbf'] > time() || $tokenClaims['exp'] < time()) {
             // Additional validation is being performed in firebase/JWT itself
-            throw new \RuntimeException("The id_token is invalid!");
+            throw new \RuntimeException('The id_token is invalid!');
         }
 
-        if ($this->tenant == "common") {
+        if ('common' == $this->tenant) {
             $this->tenant = $tokenClaims['tid'];
 
             $tenant = $this->getTenantDetails($this->tenant);
             if ($tokenClaims['iss'] != $tenant['issuer']) {
-                throw new \RuntimeException("Invalid token issuer!");
+                throw new \RuntimeException('Invalid token issuer!');
             }
         } else {
             $tenant = $this->getTenantDetails($this->tenant);
             if ($tokenClaims['iss'] != $tenant['issuer']) {
-                throw new \RuntimeException("Invalid token issuer!");
+                throw new \RuntimeException('Invalid token issuer!');
             }
         }
 
@@ -315,10 +266,65 @@ class Azure extends AbstractProvider
     public function getTenantDetails($tenant)
     {
         $factory = $this->getRequestFactory();
-        $request = $factory->getRequestWithOptions('get',
-            'https://login.windows.net/' . $tenant . '/.well-known/openid-configuration', []);
+        $request = $factory->getRequestWithOptions(
+            'get',
+            'https://login.windows.net/' . $tenant . '/.well-known/openid-configuration',
+            []
+        );
 
         $response = $this->getParsedResponse($request);
+
+        return $response;
+    }
+
+    protected function checkResponse(ResponseInterface $response, $data)
+    {
+        if (isset($data['odata.error']) || isset($data['error'])) {
+            if (isset($data['odata.error']['message']['value'])) {
+                $message = $data['odata.error']['message']['value'];
+            } elseif (isset($data['error']['message'])) {
+                $message = $data['error']['message'];
+            } elseif (isset($data['error']) && !is_array($data['error'])) {
+                $message = $data['error'];
+            } else {
+                $message = $response->getReasonPhrase();
+            }
+
+            throw new IdentityProviderException(
+                $message,
+                $response->getStatusCode(),
+                $response
+            );
+        }
+    }
+
+    protected function getDefaultScopes()
+    {
+        return $this->scope;
+    }
+
+    protected function getScopeSeparator()
+    {
+        return $this->scopeSeparator;
+    }
+
+    protected function createAccessToken(array $response, AbstractGrant $grant)
+    {
+        return new AccessToken($response, $this);
+    }
+
+    protected function createResourceOwner(array $response, \League\OAuth2\Client\Token\AccessToken $token)
+    {
+        return new AzureResourceOwner($response);
+    }
+
+    private function wrapResponse($response)
+    {
+        if (empty($response)) {
+            return;
+        } elseif (isset($response['value'])) {
+            return $response['value'];
+        }
 
         return $response;
     }

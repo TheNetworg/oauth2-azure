@@ -1,4 +1,5 @@
 <?php
+
 namespace TheNetworg\OAuth2\Client\Grant;
 
 class JwtBearer extends \League\OAuth2\Client\Grant\AbstractGrant
@@ -12,7 +13,7 @@ class JwtBearer extends \League\OAuth2\Client\Grant\AbstractGrant
     {
         return [
             'requested_token_use',
-            'assertion'
+            'assertion',
         ];
     }
 }
