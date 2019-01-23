@@ -246,9 +246,9 @@ class Azure extends AbstractProvider
             if (isset($keyinfo['x5c']) && is_array($keyinfo['x5c'])) {
                 foreach ($keyinfo['x5c'] as $encodedkey) {
                     $cert =
-                        "-----BEGIN CERTIFICATE-----\r\n"
-                        . chunk_split($encodedkey,64)
-                        . "-----END CERTIFICATE-----\r\n";
+                        '-----BEGIN CERTIFICATE-----' . PHP_EOL
+                        . chunk_split($encodedkey, 64,  PHP_EOL)
+                        . '-----END CERTIFICATE-----' . PHP_EOL;
 
                     $cert_object = openssl_x509_read($cert);
 
