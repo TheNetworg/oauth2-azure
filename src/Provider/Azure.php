@@ -245,10 +245,32 @@ class Azure extends AbstractProvider
         foreach ($response['keys'] as $i => $keyinfo) {
             if (isset($keyinfo['x5c']) && is_array($keyinfo['x5c'])) {
                 foreach ($keyinfo['x5c'] as $encodedkey) {
-                    $key = "-----BEGIN CERTIFICATE-----\n";
-                    $key .= wordwrap($encodedkey, 64, "\n", true);
-                    $key .= "\n-----END CERTIFICATE-----";
-                    $keys[$keyinfo['kid']] = $key;
+                    $cert =
+                        '-----BEGIN CERTIFICATE-----' . PHP_EOL
+                        . chunk_split($encodedkey, 64,  PHP_EOL)
+                        . '-----END CERTIFICATE-----' . PHP_EOL;
+
+                    $cert_object = openssl_x509_read($cert);
+
+                    if ($cert_object === false) {
+                        throw new \RuntimeException('An attempt to read ' . $encodedkey . ' as a certificate failed.');
+                    }
+
+                    $pkey_object = openssl_pkey_get_public($cert_object);
+
+                    if ($pkey_object === false) {
+                        throw new \RuntimeException('An attempt to read a public key from a ' . $encodedkey . ' certificate failed.');
+                    }
+
+                    $pkey_array = openssl_pkey_get_details($pkey_object);
+
+                    if ($pkey_array === false) {
+                        throw new \RuntimeException('An attempt to get a public key as an array from a ' . $encodedkey . ' certificate failed.');
+                    }
+
+                    $publicKey = $pkey_array ['key'];
+
+                    $keys[$keyinfo['kid']] = $publicKey;
                 }
             }
         }
