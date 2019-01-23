@@ -38,27 +38,8 @@ class AccessToken extends \League\OAuth2\Client\Token\AccessToken
             } catch (JWT_Exception $e) {
                 throw new RuntimeException('Unable to parse the id_token!');
             }
-            if ($provider->getClientId() != $idTokenClaims['aud']) {
-                throw new RuntimeException('The audience is invalid!');
-            }
-            if ($idTokenClaims['nbf'] > time() || $idTokenClaims['exp'] < time()) {
-                // Additional validation is being performed in firebase/JWT itself
-                throw new RuntimeException('The id_token is invalid!');
-            }
 
-            if ('common' == $provider->tenant) {
-                $provider->tenant = $idTokenClaims['tid'];
-
-                $tenant = $provider->getTenantDetails($provider->tenant);
-                if ($idTokenClaims['iss'] != $tenant['issuer']) {
-                    throw new RuntimeException('Invalid token issuer!');
-                }
-            } else {
-                $tenant = $provider->getTenantDetails($provider->tenant);
-                if ($idTokenClaims['iss'] != $tenant['issuer']) {
-                    throw new RuntimeException('Invalid token issuer!');
-                }
-            }
+            $provider->validateTokenClaims($idTokenClaims);
 
             $this->idTokenClaims = $idTokenClaims;
         }
