@@ -245,9 +245,9 @@ class Azure extends AbstractProvider
         foreach ($response['keys'] as $i => $keyinfo) {
             if (isset($keyinfo['x5c']) && is_array($keyinfo['x5c'])) {
                 foreach ($keyinfo['x5c'] as $encodedkey) {
-                    $key = "-----BEGIN CERTIFICATE-----\n";
-                    $key .= wordwrap($encodedkey, 64, "\n", true);
-                    $key .= "\n-----END CERTIFICATE-----";
+                    $key = '-----BEGIN CERTIFICATE-----' . PHP_EOL;
+                    $key .= chunk_split($encodedkey, 64, PHP_EOL);
+                    $key .= PHP_EOL . '-----END CERTIFICATE-----';
                     $keys[$keyinfo['kid']] = $key;
                 }
             }
