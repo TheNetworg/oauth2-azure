@@ -136,7 +136,9 @@ header('Location: '.$logoutUrl); // Redirect the user to the generated URL
 #### Call on behalf of a token provided by another app
 
 ```php
-$suppliedToken = ''; // Use token provided by the other app
+// Use token provided by the other app
+// Make sure the other app mentioned this app in the scope when requesting the token
+$suppliedToken = '';  
 
 $provider = xxxxx;// Initialize provider
 
