@@ -13,6 +13,9 @@ use TheNetworg\OAuth2\Client\Token\AccessToken;
 
 class Azure extends AbstractProvider
 {
+    const ENDPOINT_VERSION_1_0 = '1.0';
+    const ENDPOINT_VERSION_2_0 = '2.0';
+
     use BearerAuthorizationTrait;
 
     public $urlLogin = 'https://login.microsoftonline.com/';
@@ -26,6 +29,8 @@ class Azure extends AbstractProvider
     public $scopeSeparator = ' ';
 
     public $tenant = 'common';
+
+    public $defaultEndPointVersion = self::ENDPOINT_VERSION_1_0;
 
     public $urlAPI = 'https://graph.windows.net/';
 
@@ -284,13 +289,16 @@ class Azure extends AbstractProvider
      * @param string $tenant
      *
      * @return array
+     * @throws IdentityProviderException
      */
     public function getTenantDetails($tenant)
     {
+        $versionPath = $this->defaultEndPointVersion === '2.0' ? '/v2.0' : '';
+
         $factory = $this->getRequestFactory();
         $request = $factory->getRequestWithOptions(
             'get',
-            'https://login.windows.net/' . $tenant . '/.well-known/openid-configuration',
+            $this->urlLogin . '/' . $tenant . $versionPath . '/.well-known/openid-configuration',
             []
         );
 
