@@ -284,39 +284,53 @@ class Azure extends AbstractProvider
      * @input $id_token string The ID token you received in the authorization header.
      *
      * @return array
+     *
+     * @throws \RuntimeException
      */
     public function validateToken($id_token)
     {
-        $jwks = $this->getJwtVerificationKeys($this->openIdConfiguration['jwks_uri']);
+        $jwks = null;
         $jwt = null;
-        $last_exception = null;
+        $key_check = 0;
+
+        $jwks = $this->getJwtVerificationKeys($this->openIdConfiguration['jwks_uri']);
+        if (!$jwks) {
+            throw new \RuntimeException('No JSON Web Key Set found. Please check your OpenID Configuration.');
+        }
+        if (!$id_token) {
+            throw new \RuntimeException('No token found in authorization header');
+        }
         $token_array = explode('.', $id_token);
-        $header = json_decode(base64_decode($token_array[0]),true);
+        $token_header = json_decode(base64_decode($token_array[0]), true);
 
         foreach ($jwks['keys'] as $key) {
-            try {
-                if ($key['kid'] == $header['kid']) {
-                    if (null == $key['x5c']) {
-                        throw new \RuntimeException('key does not contain the x5c attribute');
-                    }
-                    $key_der = $key['x5c'][0];
-                    $key_pem = chunk_split($key_der, 64, "\n");
-                    $key_pem = "-----BEGIN CERTIFICATE-----\n" . $key_pem . "-----END CERTIFICATE-----\n";
-                    $jwt = (array)JWT::decode($id_token, $key_pem, array('HS256', 'HS384', 'HS512', 'RS256'));
-                    break;
+            if ($key['kid'] == $token_header['kid']) {
+                $key_check = 1;
+                if (null == $key['x5c']) {
+                    throw new \RuntimeException('Key does not contain the x5c attribute');
                 }
-            } catch (Exception $e) {
-                $last_exception = $e;
+                $key_der = $key['x5c'][0];
+                $key_pem = chunk_split($key_der, 64, "\n");
+                $key_pem = "-----BEGIN CERTIFICATE-----\n" . $key_pem . "-----END CERTIFICATE-----\n";
+                try {
+                    $jwt = (array)JWT::decode($id_token, $key_pem, array('HS256', 'HS384', 'HS512', 'RS256'));
+                } catch (\Exception $e) {
+                    throw new \RuntimeException($e->getMessage(), $e->getCode());
+                }
+                break;
             }
         }
-        if (null == $jwt) {
-            throw $last_exception;
+        if ($jwt == null) {
+            if ($key_check == 0) {
+                throw new \RuntimeException('The token does not contain a valid key');
+            }
+            throw new \RuntimeException('The token is invalid!');
         }
         if ($this->audience && $this->audience != $jwt['aud']) {
-            throw new \RuntimeException("The audience is invalid!");
+            throw new \RuntimeException("The token audience is invalid!");
         }
         if ($this->openIdConfiguration['issuer'] != $jwt['iss']) {
-            throw new \RuntimeException("The security token service is invalid!");
+            throw new \RuntimeException("The token issuer is invalid!");
         }
         return $jwt;
     }
