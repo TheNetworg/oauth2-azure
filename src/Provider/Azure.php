@@ -82,7 +82,11 @@ class Azure extends AbstractProvider
         // Store the state as it may need to be accessed later on.
         $this->state = $options['state'];
         $options['client_id'] = $this->clientId;
-        $options['redirect_uri'] = $this->redirectUri;
+        
+        if (empty($options['redirect_uri'])) {
+            $options['redirect_uri'] = $this->redirectUri;
+        }
+        
         $options['state'] = $this->state;
 
         return $options;
