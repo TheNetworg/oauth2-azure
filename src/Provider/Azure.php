@@ -192,9 +192,14 @@ class Azure extends AbstractProvider
      *
      * @return string
      */
-    public function getLogoutUrl($post_logout_redirect_uri)
+    public function getLogoutUrl($post_logout_redirect_uri = "")
     {
-        return 'https://login.microsoftonline.com/' . $this->tenant . '/oauth2/logout?post_logout_redirect_uri=' . rawurlencode($post_logout_redirect_uri);
+        $logoutUrl = 'https://login.microsoftonline.com/' . $this->tenant . '/oauth2/logout';
+        if (!empty($post_logout_redirect_uri)) {
+            $logoutUrl .= '?post_logout_redirect_uri=' . rawurlencode($post_logout_redirect_uri);
+        }
+
+        return $logoutUrl;
     }
 
     /**
