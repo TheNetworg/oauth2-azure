@@ -325,6 +325,10 @@ class Azure extends AbstractProvider
                 $message = $response->getReasonPhrase();
             }
 
+            if (isset($data['error_description']) && !is_array($data['error_description'])) {
+                $message .= PHP_EOL . $data['error_description'];
+            }
+
             throw new IdentityProviderException(
                 $message,
                 $response->getStatusCode(),
