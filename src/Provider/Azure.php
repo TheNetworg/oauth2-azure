@@ -9,7 +9,8 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
 use Psr\Http\Message\ResponseInterface;
 use TheNetworg\OAuth2\Client\Grant\JwtBearer;
-use TheNetworg\OAuth2\Client\Token\AccessToken;
+use League\OAuth2\Client\Token\AccessToken;
+use RuntimeException;
 
 class Azure extends AbstractProvider
 {
@@ -64,13 +65,70 @@ class Azure extends AbstractProvider
         return parent::getAccessToken($grant, $options);
     }
 
-    public function getResourceOwner(\League\OAuth2\Client\Token\AccessToken $token)
+    /**
+     * @param string $data
+     * @return array
+     * @throws RuntimeException
+     */
+    public function readIdToken($data)
     {
-        $data = $token->getIdTokenClaims();
-        return $this->createResourceOwner($data, $token);
+        $idTokenClaims = null;
+        try {
+            $tks = explode('.', $data);
+            // Check if the id_token contains signature
+            if (count($tks) < 2) {
+                throw new RuntimeException('Invalid id_token');
+            }
+            if (3 == count($tks) && !empty($tks[2])) {
+                $keys = $this->getJwtVerificationKeys();
+                $idTokenClaims = (array)JWT::decode($data, $keys, ['RS256']);
+            } else {
+                // The id_token is unsigned (coming from v1.0 endpoint) - https://msdn.microsoft.com/en-us/library/azure/dn645542.aspx
+
+                // Since idToken is not signed, we just do OAuth2 flow without validating the id_token
+                // // Validate the access_token signature first by parsing it as JWT into claims
+                // $accessTokenClaims = (array)JWT::decode($options['access_token'], $keys, ['RS256']);
+                // Then parse the idToken claims only without validating the signature
+                $idTokenClaims = (array)JWT::jsonDecode(JWT::urlsafeB64Decode($tks[1]));
+            }
+        } catch (JWT_Exception $e) {
+            throw new RuntimeException('Unable to parse the id_token!');
+        }
+        if ($this->getClientId() != $idTokenClaims['aud']) {
+            throw new RuntimeException('The audience is invalid!');
+        }
+        if ($idTokenClaims['nbf'] > time() || $idTokenClaims['exp'] < time()) {
+            // Additional validation is being performed in firebase/JWT itself
+            throw new RuntimeException('The id_token is invalid!');
+        }
+
+        if ('common' == $this->tenant) {
+            $this->tenant = $idTokenClaims['tid'];
+        }
+        $tenant = $this->getTenantDetails($this->tenant);
+        if ($idTokenClaims['iss'] != $tenant['issuer']) {
+            throw new RuntimeException('Invalid token issuer!');
+        }
+
+        return $idTokenClaims;
     }
 
-    public function getResourceOwnerDetailsUrl(\League\OAuth2\Client\Token\AccessToken $token)
+    /**
+     * @param AccessToken $token
+     * @return null|AzureResourceOwner
+     */
+    public function getResourceOwner(AccessToken $token)
+    {
+        $tokenValues = $token->getValues();
+        if(empty($tokenValues['id_token'])) {
+            return NULL;
+        }
+        $id = $this->readIdToken($tokenValues['id_token']);
+
+        return $this->createResourceOwner($id, $token);
+    }
+
+    public function getResourceOwnerDetailsUrl(AccessToken $token)
     {
     }
 
@@ -352,7 +410,7 @@ class Azure extends AbstractProvider
         return new AccessToken($response, $this);
     }
 
-    protected function createResourceOwner(array $response, \League\OAuth2\Client\Token\AccessToken $token)
+    protected function createResourceOwner(array $response, AccessToken $token)
     {
         return new AzureResourceOwner($response);
     }
