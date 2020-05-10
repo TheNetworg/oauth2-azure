@@ -49,8 +49,7 @@ class Azure extends AbstractProvider
      * @param string $tenant
      * @param string $version
      */
-    protected function 
-      Configuration($tenant, $version) {
+    protected function getOpenIdConfiguration($tenant, $version) {
         if (!is_array($this->openIdConfiguration)) {
             $this->openIdConfiguration = [];
         }
@@ -247,8 +246,7 @@ class Azure extends AbstractProvider
      */
     public function getLogoutUrl($post_logout_redirect_uri = "")
     {
-        $openIdConfiguration = $this->
-          Configuration($this->tenant, $this->defaultEndPointVersion);
+        $openIdConfiguration = $this->getOpenIdConfiguration($this->tenant, $this->defaultEndPointVersion);
         $logoutUri = $openIdConfiguration['end_session_endpoint'];
 
         if (!empty($post_logout_redirect_uri)) {
