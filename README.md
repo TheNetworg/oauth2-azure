@@ -11,11 +11,12 @@ This package provides [Azure Active Directory](https://azure.microsoft.com/en-us
     - [Authorization Code Flow](#authorization-code-flow)
         - [Advanced flow](#advanced-flow)
         - [Using custom parameters](#using-custom-parameters)
+        - [**NEW** - Call on behalf of a token provided by another app](#call-on-behalf-of-a-token-provided-by-another-app)
     - [**NEW** - Logging out](#logging-out)
 - [Making API Requests](#making-api-requests)
     - [Variables](#variables)
 - [Resource Owner](#resource-owner)
-- [Microsoft Graph](#microsoft-graph)
+- [**UPDATED** - Microsoft Graph](#microsoft-graph)
 - [**NEW** - Protecting your API - *experimental*](#protecting-your-api---experimental)
 - [Azure Active Directory B2C - *experimental*](#azure-active-directory-b2c---experimental)
 - [Multipurpose refresh tokens - *experimental*](#multipurpose-refresh-tokens---experimental)
@@ -46,45 +47,66 @@ $provider = new TheNetworg\OAuth2\Client\Provider\Azure([
     'redirectUri'       => 'https://example.com/callback-url'
 ]);
 
-if (!isset($_GET['code'])) {
+// Set to use v2 API, skip the line or set the value to Azure::ENDPOINT_VERSION_1_0 if willing to use v1 API
+$provider->defaultEndPointVersion = Azure::ENDPOINT_VERSION_2_0;
 
-    // If we don't have an authorization code then get one
-    $authUrl = $provider->getAuthorizationUrl();
-    $_SESSION['oauth2state'] = $provider->getState();
-    header('Location: '.$authUrl);
-    exit;
+$baseGraphUri = $provider->getRootMicrosoftGraphUri(null);
+$provider->scope = 'openid profile email offline_access ' . $baseGraphUri . '/User.Read';
 
-// Check given state against previously stored one to mitigate CSRF attack
-} elseif (empty($_GET['state']) || ($_GET['state'] !== $_SESSION['oauth2state'])) {
+if (isset($_GET['code']) && isset($_SESSION['OAuth2.state']) && isset($_GET['state'])) {
+    if ($_GET['state'] == $_SESSION['OAuth2.state']) {
+        unset($_SESSION['OAuth2.state']);
 
-    unset($_SESSION['oauth2state']);
-    exit('Invalid state');
+        // Try to get an access token (using the authorization code grant)
+        /** @var AccessToken $token */
+        $token = $provider->getAccessToken('authorization_code', [
+            'scope' => $provider->scope,
+            'code' => $_GET['code'],
+        ]);
 
-} else {
+        // Verify token
+        // Save it to local server session data
+        
+        return $token->getToken();
+    } else {
+        echo 'Invalid state';
 
-    // Try to get an access token (using the authorization code grant)
-    $token = $provider->getAccessToken('authorization_code', [
-        'code' => $_GET['code'],
-        'resource' => 'https://graph.windows.net',
-    ]);
-
-    // Optional: Now you have a token you can look up a users profile data
-    try {
-
-        // We got an access token, let's now get the user's details
-        $me = $provider->get("me", $token);
-
-        // Use these details to create a new profile
-        printf('Hello %s!', $me['givenName']);
-
-    } catch (Exception $e) {
-
-        // Failed to get user details
-        exit('Oh dear...');
+        return null;
     }
+} else {
+    // // Check local server's session data for a token
+    // // and verify if still valid 
+    // /** @var ?AccessToken $token */
+    // $token = // token cached in session data, null if not found;
+    //
+    // if (isset($token)) {
+    //    $me = $provider->get($provider->getRootMicrosoftGraphUri($token) . '/v1.0/me', $token);
+    //    $userEmail = $me['mail'];
+    //
+    //    if ($token->hasExpired()) {
+    //        if (!is_null($token->getRefreshToken())) {
+    //            $token = $provider->getAccessToken('refresh_token', [
+    //                'scope' => $provider->scope,
+    //                'refresh_token' => $token->getRefreshToken()
+    //            ]);
+    //        } else {
+    //            $token = null;
+    //        }
+    //    }
+    //}
+    //
+    // If the token is not found in 
+    // if (!isset($token)) {
+        $authorizationUrl = $provider->getAuthorizationUrl(['scope' => $provider->scope]);
 
-    // Use this to interact with an API on the users behalf
-    echo $token->getToken();
+        $_SESSION['OAuth2.state'] = $provider->getState();
+
+        header('Location: ' . $authorizationUrl);
+
+        exit;
+    // }
+
+    return $token->getToken();
 }
 ```
 
@@ -109,6 +131,26 @@ If you need to quickly generate a logout URL for the user, you can do following:
 $post_logout_redirect_uri = 'https://www.msn.com'; // The logout destination after the user is logged out from their account.
 $logoutUrl = $provider->getLogoutUrl($post_logout_redirect_uri);
 header('Location: '.$logoutUrl); // Redirect the user to the generated URL
+```
+
+#### Call on behalf of a token provided by another app
+
+```php
+// Use token provided by the other app
+// Make sure the other app mentioned this app in the scope when requesting the token
+$suppliedToken = '';  
+
+$provider = xxxxx;// Initialize provider
+
+// Call this to get claims
+// $claims = $provider->validateAccessToken($suppliedToken);
+
+/** @var AccessToken $token */
+$token = $provider->getAccessToken('jwt_bearer', [
+    'scope' => $provider->scope,
+    'assertion' => $suppliedToken,
+    'requested_token_use' => 'on_behalf_of',
+]);
 ```
 
 ## Making API Requests
@@ -151,8 +193,12 @@ The exposed attributes and function are:
 ## Microsoft Graph
 Calling [Microsoft Graph](http://graph.microsoft.io/) is very simple with this library. After provider initialization simply change the API URL followingly (replace `v1.0` with your desired version):
 ```php
-$provider->urlAPI = "https://graph.microsoft.com/v1.0/";
-$provider->resource = "https://graph.microsoft.com/";
+// Mention Microsoft Graph scope when initializing the provider 
+$baseGraphUri = $provider->getRootMicrosoftGraphUri(null);
+$provider->scope = 'your scope ' . $baseGraphUri . '/User.Read';
+
+// Call a query
+$provider->get($provider->getRootMicrosoftGraphUri($token) . '/v1.0/me', $token);
 ```
 After that, when requesting access token, refresh token or so, provide the `resource` with value `https://graph.microsoft.com/` in order to be able to make calls to the Graph (see more about `resource` [here](#advanced-flow)).
 
@@ -223,6 +269,7 @@ We accept contributions via [Pull Requests on Github](https://github.com/thenetw
 - [Jan Hajek](https://github.com/hajekj) ([TheNetw.org](https://thenetw.org))
 - [Vittorio Bertocci](https://github.com/vibronet) (Microsoft)
     - Thanks for the splendid support while implementing #16
+- [Martin Cetkovský](https://github.com/mcetkovsky) ([cetkovsky.eu](https://www.cetkovsky.eu)]
 - [All Contributors](https://github.com/thenetworg/oauth2-azure/contributors)
 
 ## Support
