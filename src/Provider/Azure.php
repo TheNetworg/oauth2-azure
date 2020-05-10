@@ -15,8 +15,10 @@ class Azure extends AbstractProvider
 {
     const ENDPOINT_VERSION_1_0 = '1.0';
     const ENDPOINT_VERSION_2_0 = '2.0';
-
+  
     use BearerAuthorizationTrait;
+
+    public $urlLogin = 'https://login.microsoftonline.com/';
 
     /** @var array|null */
     protected $openIdConfiguration;
@@ -47,7 +49,8 @@ class Azure extends AbstractProvider
      * @param string $tenant
      * @param string $version
      */
-    protected function getOpenIdConfiguration($tenant, $version) {
+    protected function 
+      Configuration($tenant, $version) {
         if (!is_array($this->openIdConfiguration)) {
             $this->openIdConfiguration = [];
         }
@@ -242,12 +245,17 @@ class Azure extends AbstractProvider
      *
      * @return string
      */
-    public function getLogoutUrl($post_logout_redirect_uri)
+    public function getLogoutUrl($post_logout_redirect_uri = "")
     {
-        $openIdConfiguration = $this->getOpenIdConfiguration($this->tenant, $this->defaultEndPointVersion);
+        $openIdConfiguration = $this->
+          Configuration($this->tenant, $this->defaultEndPointVersion);
         $logoutUri = $openIdConfiguration['end_session_endpoint'];
 
-        return $logoutUri . '?post_logout_redirect_uri=' . rawurlencode($post_logout_redirect_uri);
+        if (!empty($post_logout_redirect_uri)) {
+            $logoutUri .= '?post_logout_redirect_uri=' . rawurlencode($post_logout_redirect_uri);
+        }
+
+        return $logoutUri;
     }
 
     /**
@@ -361,6 +369,7 @@ class Azure extends AbstractProvider
      * @param string|null $version
      *
      * @return array
+     * @throws IdentityProviderException
      */
     public function getTenantDetails($tenant, $version)
     {
@@ -378,6 +387,10 @@ class Azure extends AbstractProvider
                 $message = $data['error'];
             } else {
                 $message = $response->getReasonPhrase();
+            }
+
+            if (isset($data['error_description']) && !is_array($data['error_description'])) {
+                $message .= PHP_EOL . $data['error_description'];
             }
 
             throw new IdentityProviderException(
