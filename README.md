@@ -48,7 +48,7 @@ $provider = new TheNetworg\OAuth2\Client\Provider\Azure([
 ]);
 
 // Set to use v2 API, skip the line or set the value to Azure::ENDPOINT_VERSION_1_0 if willing to use v1 API
-$provider->defaultEndPointVersion = Azure::ENDPOINT_VERSION_2_0;
+$provider->defaultEndPointVersion = TheNetworg\OAuth2\Client\Provider\Azure::ENDPOINT_VERSION_2_0;
 
 $baseGraphUri = $provider->getRootMicrosoftGraphUri(null);
 $provider->scope = 'openid profile email offline_access ' . $baseGraphUri . '/User.Read';
