@@ -281,7 +281,15 @@ class Azure extends AbstractProvider
      * @return void
      */
     public function validateTokenClaims($tokenClaims) {
-        if ($this->getClientId() != $tokenClaims['aud'] && $this->getClientId() != $tokenClaims['appid']) {
+        $version = array_key_exists('ver', $tokenClaims) ? $tokenClaims['ver'] : $this->defaultEndPointVersion;
+
+        if ($version == self::ENDPOINT_VERSION_1_0) {
+            $appId = $tokenClaims['appid'];
+        } else {
+            $appId = $tokenClaims['azp'];
+        }
+
+        if ($this->getClientId() != $tokenClaims['aud'] && $this->getClientId() != $appId) {
             throw new \RuntimeException('The client_id / audience is invalid!');
         }
         if ($tokenClaims['nbf'] > time() || $tokenClaims['exp'] < time()) {
@@ -293,7 +301,6 @@ class Azure extends AbstractProvider
             $this->tenant = $tokenClaims['tid'];
         }
 
-        $version = array_key_exists('ver', $tokenClaims) ? $tokenClaims['ver'] : $this->defaultEndPointVersion;
         $tenant = $this->getTenantDetails($this->tenant, $version);
         if ($tokenClaims['iss'] != $tenant['issuer']) {
             throw new \RuntimeException('Invalid token issuer (tokenClaims[iss]' . $tokenClaims['iss'] . ', tenant[issuer] ' . $tenant['issuer'] . ')!');
