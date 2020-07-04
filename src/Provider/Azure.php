@@ -281,7 +281,7 @@ class Azure extends AbstractProvider
      * @return void
      */
     public function validateTokenClaims($tokenClaims) {
-        if ($this->getClientId() != $tokenClaims['aud'] && $this->getClientId() != $tokenClaims['appid']) {
+        if ($this->getClientId() != $tokenClaims['aud']) {
             throw new \RuntimeException('The client_id / audience is invalid!');
         }
         if ($tokenClaims['nbf'] > time() || $tokenClaims['exp'] < time()) {
