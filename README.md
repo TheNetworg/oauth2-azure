@@ -44,7 +44,11 @@ Usage is the same as The League's OAuth client, using `\TheNetworg\OAuth2\Client
 $provider = new TheNetworg\OAuth2\Client\Provider\Azure([
     'clientId'          => '{azure-client-id}',
     'clientSecret'      => '{azure-client-secret}',
-    'redirectUri'       => 'https://example.com/callback-url'
+    'redirectUri'       => 'https://example.com/callback-url',
+    //Optional
+    'scopes'            => 'openid',
+    //Optional
+    'defaultEndPointVersion' => '2.0'
 ]);
 
 // Set to use v2 API, skip the line or set the value to Azure::ENDPOINT_VERSION_1_0 if willing to use v1 API

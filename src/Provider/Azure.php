@@ -15,7 +15,8 @@ class Azure extends AbstractProvider
 {
     const ENDPOINT_VERSION_1_0 = '1.0';
     const ENDPOINT_VERSION_2_0 = '2.0';
-  
+    const ENDPOINT_VERSIONS = [self::ENDPOINT_VERSION_1_0, self::ENDPOINT_VERSION_2_0];
+
     use BearerAuthorizationTrait;
 
     public $urlLogin = 'https://login.microsoftonline.com/';
@@ -42,6 +43,13 @@ class Azure extends AbstractProvider
     public function __construct(array $options = [], array $collaborators = [])
     {
         parent::__construct($options, $collaborators);
+        if (isset($options['scopes'])) {
+            $this->scope = array_merge($options['scopes'], $this->scope);
+        }
+        if (isset($options['defaultEndPointVersion']) &&
+            in_array($options['defaultEndPointVersion'], self::ENDPOINT_VERSIONS, true)) {
+            $this->defaultEndPointVersion = $options['defaultEndPointVersion'];
+        }
         $this->grantFactory->setGrant('jwt_bearer', new JwtBearer());
     }
 
