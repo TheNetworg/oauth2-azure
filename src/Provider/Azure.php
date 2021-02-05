@@ -431,7 +431,7 @@ class Azure extends AbstractProvider
     {
         if (empty($response)) {
             return;
-        } elseif (isset($response['value']) && !isset($response['@odata.nextLink'])) {
+        } elseif (isset($response['value'])) {
             return $response['value'];
         }
 
