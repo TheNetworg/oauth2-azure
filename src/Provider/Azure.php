@@ -164,11 +164,11 @@ class Azure extends AbstractProvider
         return 'https://' . $openIdConfiguration['msgraph_host'];
     }
 
-    public function get($ref, &$accessToken, $headers = [])
+    public function get($ref, &$accessToken, $headers = [], $doNotWrap = false)
     {
         $response = $this->request('get', $ref, $accessToken, ['headers' => $headers]);
 
-        return $this->wrapResponse($response);
+        return $doNotWrap ? $response : $this->wrapResponse($response);
     }
 
     public function post($ref, $body, &$accessToken, $headers = [])
