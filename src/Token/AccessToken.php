@@ -19,6 +19,8 @@ class AccessToken extends \League\OAuth2\Client\Token\AccessToken
         if (!empty($options['id_token'])) {
             $this->idToken = $options['id_token'];
 
+            unset($this->values['id_token']);
+
             $keys          = $provider->getJwtVerificationKeys();
             $idTokenClaims = null;
             try {
