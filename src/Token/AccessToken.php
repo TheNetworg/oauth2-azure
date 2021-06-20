@@ -49,4 +49,18 @@ class AccessToken extends \League\OAuth2\Client\Token\AccessToken
     {
         return $this->idTokenClaims;
     }
+
+    /**
+     * @inheritdoc
+     */
+    public function jsonSerialize()
+    {
+        $parameters = parent::jsonSerialize();
+
+        if ($this->idToken) {
+            $parameters['id_token'] = $this->idToken;
+        }
+
+        return $parameters;
+    }
 }
