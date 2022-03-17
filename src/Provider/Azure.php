@@ -3,6 +3,7 @@
 namespace TheNetworg\OAuth2\Client\Provider;
 
 use Firebase\JWT\JWT;
+use Firebase\JWT\JWK;
 use League\OAuth2\Client\Grant\AbstractGrant;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
@@ -354,6 +355,22 @@ class Azure extends AbstractProvider
 
                     $keys[$keyinfo['kid']] = $publicKey;
                 }
+            } else if (isset($keyinfo['n']) && isset($keyinfo['e'])) {
+                $pkey_object = JWK::parseKey($keyinfo);
+
+                if ($pkey_object === false) {
+                    throw new \RuntimeException('An attempt to read a public key from a ' . $keyinfo['n'] . ' certificate failed.');
+                }
+
+                $pkey_array = openssl_pkey_get_details($pkey_object);
+
+                if ($pkey_array === false) {
+                    throw new \RuntimeException('An attempt to get a public key as an array from a ' . $keyinfo['n'] . ' certificate failed.');
+                }
+
+                $publicKey = $pkey_array ['key'];
+
+                $keys[$keyinfo['kid']] = $publicKey;
             }
         }
 
