@@ -3,9 +3,12 @@
 namespace TheNetworg\OAuth2\Client\Provider;
 
 use Firebase\JWT\JWT;
+use Firebase\JWT\JWK;
 use League\OAuth2\Client\Grant\AbstractGrant;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
+use League\OAuth2\Client\Provider\ResourceOwnerInterface;
+use League\OAuth2\Client\Token\AccessTokenInterface;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
 use Psr\Http\Message\ResponseInterface;
 use TheNetworg\OAuth2\Client\Grant\JwtBearer;
@@ -66,8 +69,8 @@ class Azure extends AbstractProvider
         }
         if (!array_key_exists($version, $this->openIdConfiguration[$tenant])) {
             $versionInfix = $this->getVersionUriInfix($version);
-	    $openIdConfigurationUri = 'https://login.microsoftonline.com/' . $tenant . $versionInfix . '/.well-known/openid-configuration?appid=' . $this->clientId;
-
+	          $openIdConfigurationUri = $this->urlLogin . $tenant . $versionInfix . '/.well-known/openid-configuration?appid=' . $this->clientId;
+            
             $factory = $this->getRequestFactory();
             $request = $factory->getRequestWithOptions(
                 'get',
@@ -81,19 +84,28 @@ class Azure extends AbstractProvider
         return $this->openIdConfiguration[$tenant][$version];
     }
 
-    public function getBaseAuthorizationUrl()
+    /**
+     * @inheritdoc
+     */
+    public function getBaseAuthorizationUrl(): string
     {
         $openIdConfiguration = $this->getOpenIdConfiguration($this->tenant, $this->defaultEndPointVersion);
         return $openIdConfiguration['authorization_endpoint'];
     }
 
-    public function getBaseAccessTokenUrl(array $params)
+    /**
+     * @inheritdoc
+     */
+    public function getBaseAccessTokenUrl(array $params): string
     {
         $openIdConfiguration = $this->getOpenIdConfiguration($this->tenant, $this->defaultEndPointVersion);
         return $openIdConfiguration['token_endpoint'];
     }
 
-    public function getAccessToken($grant, array $options = [])
+    /**
+     * @inheritdoc
+     */
+    public function getAccessToken($grant, array $options = []): AccessTokenInterface
     {
         if ($this->defaultEndPointVersion != self::ENDPOINT_VERSION_2_0) {
             // Version 2.0 does not support the resources parameter
@@ -107,14 +119,21 @@ class Azure extends AbstractProvider
         return parent::getAccessToken($grant, $options);
     }
 
-    public function getResourceOwner(\League\OAuth2\Client\Token\AccessToken $token)
+    /**
+     * @inheritdoc
+     */
+    public function getResourceOwner(\League\OAuth2\Client\Token\AccessToken $token): ResourceOwnerInterface
     {
         $data = $token->getIdTokenClaims();
         return $this->createResourceOwner($data, $token);
     }
 
-    public function getResourceOwnerDetailsUrl(\League\OAuth2\Client\Token\AccessToken $token)
+    /**
+     * @inheritdoc
+     */
+    public function getResourceOwnerDetailsUrl(\League\OAuth2\Client\Token\AccessToken $token): string
     {
+        return ''; // shouldn't that return such a URL?
     }
 
     public function getObjects($tenant, $ref, &$accessToken, $headers = [])
@@ -165,11 +184,11 @@ class Azure extends AbstractProvider
         return 'https://' . $openIdConfiguration['msgraph_host'];
     }
 
-    public function get($ref, &$accessToken, $headers = [])
+    public function get($ref, &$accessToken, $headers = [], $doNotWrap = false)
     {
         $response = $this->request('get', $ref, $accessToken, ['headers' => $headers]);
 
-        return $this->wrapResponse($response);
+        return $doNotWrap ? $response : $this->wrapResponse($response);
     }
 
     public function post($ref, $body, &$accessToken, $headers = [])
@@ -355,6 +374,22 @@ class Azure extends AbstractProvider
 
                     $keys[$keyinfo['kid']] = $publicKey;
                 }
+            } else if (isset($keyinfo['n']) && isset($keyinfo['e'])) {
+                $pkey_object = JWK::parseKey($keyinfo);
+
+                if ($pkey_object === false) {
+                    throw new \RuntimeException('An attempt to read a public key from a ' . $keyinfo['n'] . ' certificate failed.');
+                }
+
+                $pkey_array = openssl_pkey_get_details($pkey_object);
+
+                if ($pkey_array === false) {
+                    throw new \RuntimeException('An attempt to get a public key as an array from a ' . $keyinfo['n'] . ' certificate failed.');
+                }
+
+                $publicKey = $pkey_array ['key'];
+
+                $keys[$keyinfo['kid']] = $publicKey;
             }
         }
 
@@ -383,7 +418,10 @@ class Azure extends AbstractProvider
         return $this->getOpenIdConfiguration($this->tenant, $this->defaultEndPointVersion);
     }
 
-    protected function checkResponse(ResponseInterface $response, $data)
+    /**
+     * @inheritdoc
+     */
+    protected function checkResponse(ResponseInterface $response, $data): void
     {
         if (isset($data['odata.error']) || isset($data['error'])) {
             if (isset($data['odata.error']['message']['value'])) {
@@ -403,27 +441,39 @@ class Azure extends AbstractProvider
             throw new IdentityProviderException(
                 $message,
                 $response->getStatusCode(),
-                $response
+                $response->getBody()
             );
         }
     }
 
-    protected function getDefaultScopes()
+    /**
+     * @inheritdoc
+     */
+    protected function getDefaultScopes(): array
     {
         return $this->scope;
     }
 
-    protected function getScopeSeparator()
+    /**
+     * @inheritdoc
+     */
+    protected function getScopeSeparator(): string
     {
         return $this->scopeSeparator;
     }
 
-    protected function createAccessToken(array $response, AbstractGrant $grant)
+    /**
+     * @inheritdoc
+     */
+    protected function createAccessToken(array $response, AbstractGrant $grant): AccessToken
     {
         return new AccessToken($response, $this);
     }
 
-    protected function createResourceOwner(array $response, \League\OAuth2\Client\Token\AccessToken $token)
+    /**
+     * @inheritdoc
+     */
+    protected function createResourceOwner(array $response, \League\OAuth2\Client\Token\AccessToken $token): AzureResourceOwner
     {
         return new AzureResourceOwner($response);
     }
