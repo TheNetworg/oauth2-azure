@@ -69,7 +69,8 @@ class Azure extends AbstractProvider
         }
         if (!array_key_exists($version, $this->openIdConfiguration[$tenant])) {
             $versionInfix = $this->getVersionUriInfix($version);
-            $openIdConfigurationUri = $this->urlLogin . $tenant . $versionInfix . '/.well-known/openid-configuration';
+	          $openIdConfigurationUri = $this->urlLogin . $tenant . $versionInfix . '/.well-known/openid-configuration?appid=' . $this->clientId;
+            
             $factory = $this->getRequestFactory();
             $request = $factory->getRequestWithOptions(
                 'get',
