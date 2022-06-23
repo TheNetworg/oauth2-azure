@@ -4,6 +4,7 @@ namespace TheNetworg\OAuth2\Client\Provider;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\JWK;
+use Firebase\JWT\Key;
 use League\OAuth2\Client\Grant\AbstractGrant;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
@@ -372,7 +373,7 @@ class Azure extends AbstractProvider
 
                     $publicKey = $pkey_array ['key'];
 
-                    $keys[$keyinfo['kid']] = $publicKey;
+                    $keys[$keyinfo['kid']] = new Key($publicKey, 'RS256');
                 }
             } else if (isset($keyinfo['n']) && isset($keyinfo['e'])) {
                 $pkey_object = JWK::parseKey($keyinfo);
@@ -389,7 +390,7 @@ class Azure extends AbstractProvider
 
                 $publicKey = $pkey_array ['key'];
 
-                $keys[$keyinfo['kid']] = $publicKey;
+               $keys[$keyinfo['kid']] = new Key($publicKey, 'RS256');;
             }
         }
 
