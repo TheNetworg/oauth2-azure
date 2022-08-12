@@ -2,6 +2,7 @@
 
 namespace TheNetworg\OAuth2\Client\Token;
 
+use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
 use InvalidArgumentException;
 use League\OAuth2\Client\Tool\RequestFactory;
@@ -37,13 +38,16 @@ class AccessToken extends \League\OAuth2\Client\Token\AccessToken
                     // Then parse the idToken claims only without validating the signature
                     $idTokenClaims = (array)JWT::jsonDecode(JWT::urlsafeB64Decode($tks[1]));
                 }
-            } catch (JWT_Exception $e) {
+
+                $provider->validateTokenClaims($idTokenClaims);
+                $this->idTokenClaims = $idTokenClaims;
+                
+            } catch (ExpiredException $e) {
+                // ID token expired, but whatever ...
+                
+            } catch (UnexpectedValueException $e) {
                 throw new RuntimeException('Unable to parse the id_token!');
             }
-
-            $provider->validateTokenClaims($idTokenClaims);
-
-            $this->idTokenClaims = $idTokenClaims;
         }
     }
 
