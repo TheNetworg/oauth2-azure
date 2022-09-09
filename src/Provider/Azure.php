@@ -11,6 +11,7 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\ResourceOwnerInterface;
 use League\OAuth2\Client\Token\AccessTokenInterface;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use TheNetworg\OAuth2\Client\Grant\JwtBearer;
 use TheNetworg\OAuth2\Client\Token\AccessToken;
@@ -43,6 +44,18 @@ class Azure extends AbstractProvider
     public $API_VERSION = '1.6';
 
     public $authWithResource = true;
+
+    /**
+     * The contents of the private key used for app authentication
+     * @var string
+     */
+    protected $clientCertificatePrivateKey = '';
+
+    /**
+     * The hexadecimal certificate thumbprint as displayed in the azure portal
+     * @var string
+     */
+    protected $clientCertificateThumbprint = '';
 
     public function __construct(array $options = [], array $collaborators = [])
     {
@@ -101,6 +114,32 @@ class Azure extends AbstractProvider
     {
         $openIdConfiguration = $this->getOpenIdConfiguration($this->tenant, $this->defaultEndPointVersion);
         return $openIdConfiguration['token_endpoint'];
+    }
+
+    protected function getAccessTokenRequest(array $params): RequestInterface
+    {
+      if ($this->clientCertificatePrivateKey && $this->clientCertificateThumbprint) {
+        $header = [
+          'x5t' => base64_encode(hex2bin($this->clientCertificateThumbprint)),
+        ];
+        $now = time();
+        $payload = [
+          'aud' => "https://login.microsoftonline.com/{$this->tenant}/oauth2/v2.0/token",
+          'exp' => $now + 360,
+          'iat' => $now,
+          'iss' => $this->clientId,
+          'jti' => bin2hex(random_bytes(20)),
+          'nbf' => $now,
+          'sub' => $this->clientId,
+        ];
+        $jwt = JWT::encode($payload, str_replace('\n', "\n", $this->clientCertificatePrivateKey), 'RS256', null, $header);
+
+        unset($params['client_secret']);
+        $params['client_assertion_type'] = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
+        $params['client_assertion'] = $jwt;
+      }
+
+      return parent::getAccessTokenRequest($params);
     }
 
     /**
