@@ -217,8 +217,8 @@ class Azure extends AbstractProvider
             $version = $this->defaultEndPointVersion;
         } else {
             $idTokenClaims = $accessToken->getIdTokenClaims();
-            $tenant = array_key_exists('tid', $idTokenClaims) ? $idTokenClaims['tid'] : $this->tenant;
-            $version = array_key_exists('ver', $idTokenClaims) ? $idTokenClaims['ver'] : $this->defaultEndPointVersion;
+            $tenant = is_array($idTokenClaims) && array_key_exists('tid', $idTokenClaims) ? $idTokenClaims['tid'] : $this->tenant;
+            $version = is_array($idTokenClaims) && array_key_exists('ver', $idTokenClaims) ? $idTokenClaims['ver'] : $this->defaultEndPointVersion;
         }
         $openIdConfiguration = $this->getOpenIdConfiguration($tenant, $version);
         return 'https://' . $openIdConfiguration['msgraph_host'];
