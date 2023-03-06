@@ -352,7 +352,7 @@ class Azure extends AbstractProvider
         if ($this->getClientId() != $tokenClaims['aud']) {
             throw new \RuntimeException('The client_id / audience is invalid!');
         }
-        if ($tokenClaims['nbf'] > time() || $tokenClaims['exp'] < time()) {
+        if ($tokenClaims['nbf'] > time() + JWT::$leeway || $tokenClaims['exp'] < time() - JWT::$leeway) {
             // Additional validation is being performed in firebase/JWT itself
             throw new \RuntimeException('The id_token is invalid!');
         }
