@@ -415,13 +415,13 @@ class Azure extends AbstractProvider
                     $keys[$keyinfo['kid']] = new Key($publicKey, 'RS256');
                 }
             } else if (isset($keyinfo['n']) && isset($keyinfo['e'])) {
-                $pkey_object = JWK::parseKey($keyinfo);
+                $pkey_object = JWK::parseKey($keyinfo, 'RS256');
 
                 if ($pkey_object === false) {
                     throw new \RuntimeException('An attempt to read a public key from a ' . $keyinfo['n'] . ' certificate failed.');
                 }
 
-                $pkey_array = openssl_pkey_get_details($pkey_object);
+                $pkey_array = openssl_pkey_get_details($pkey_object->getKeyMaterial());
 
                 if ($pkey_array === false) {
                     throw new \RuntimeException('An attempt to get a public key as an array from a ' . $keyinfo['n'] . ' certificate failed.');
