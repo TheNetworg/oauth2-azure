@@ -14,6 +14,7 @@ use TheNetworg\OAuth2\Client\Provider\Azure;
 use TheNetworg\OAuth2\Client\Provider\AzureResourceOwner;
 use TheNetworg\OAuth2\Client\Tests\Fakers\B2cKeysFaker;
 use TheNetworg\OAuth2\Client\Tests\Fakers\B2cTokenFaker;
+use TheNetworg\OAuth2\Client\Tests\Helper\AzureHelper;
 use TheNetworg\OAuth2\Client\Token\AccessToken;
 
 class AzureTest extends TestCase
@@ -22,38 +23,85 @@ class AzureTest extends TestCase
     /** @var Azure */
     private $azure;
 
-    /** @var B2cTokenFaker */
-    private $tokenFaker;
-
-    /** @var B2cKeysFaker */
-    private $keysFaker;
-
-
-    /** @var string */
-    private $defaultClientId;
-
-    /** @var string */
-    private $defaultIss;
-
-    /** @var string */
-    private $defaultAuthEndpoint;
-
-    /** @var string */
-    private $defaultLogoutUrl;
-
+    /** @var AzureHelper */
+    private $helper;
 
     /**
      * @before
      */
     public function setup(): void
     {
-        $this->tokenFaker = new B2cTokenFaker();
-        $this->keysFaker = new B2cKeysFaker();
+        $this->helper = new AzureHelper(new B2cTokenFaker(), new B2cKeysFaker());
+    }
 
-        $this->defaultClientId = 'client_id';
-        $this->defaultIss = 'iss';
-        $this->defaultAuthEndpoint = 'auth_endpoint';
-        $this->defaultLogoutUrl = 'logout_url';
+    /**
+     * @test
+     */
+    public function it_doesnt_overwrite_existing_openid_config(): void
+    {
+        $config1 = $this->helper->getConfig();
+
+        $config2 = $this->helper->getConfig();
+        $config2['issuer'] = $config2['issuer'].'2';
+        $config2['authorization_endpoint'] = $config2['authorization_endpoint'].'2';
+        $config2['end_session_endpoint'] = $config2['end_session_endpoint'].'2';
+
+        $config3 = $this->helper->getConfig();
+        $config3['issuer'] = $config3['issuer'].'3';
+        $config3['authorization_endpoint'] = $config3['authorization_endpoint'].'3';
+        $config3['end_session_endpoint'] = $config3['end_session_endpoint'].'3';
+
+        $client = new Client([
+            'handler' => new MockHandler([
+                new Response(200, ['content-type' => 'application/json'], json_encode($config1)),
+                new Response(200, ['content-type' => 'application/json'], json_encode($config2)),
+                new Response(200, ['content-type' => 'application/json'], json_encode($config3)),
+            ])
+        ]);
+
+        $this->azure = new Azure([], ['httpClient' => $client]);
+
+        // get openid config for new tenant, new version
+        $this->azure->tenant = 'tenant1';
+        $openIdConfig1 = $this->azure->getTenantDetails('', ''); // these parameters don't matter, $this->tenant and $this->defaultEndPointVersion are used in the function body
+
+        $this->assertEquals($this->helper->getDefaultIss(), $openIdConfig1['issuer']);
+        $this->assertEquals($this->helper->getDefaultAuthEndpoint(), $openIdConfig1['authorization_endpoint']);
+        $this->assertEquals($this->helper->getDefaultLogoutUrl(), $openIdConfig1['end_session_endpoint']);
+
+        // get openid config for existing tenant, new version
+        $this->azure->defaultEndPointVersion = Azure::ENDPOINT_VERSION_2_0;
+        $openIdConfig2 = $this->azure->getTenantDetails('', '');
+
+        $this->assertEquals($this->helper->getDefaultIss().'2', $openIdConfig2['issuer']);
+        $this->assertEquals($this->helper->getDefaultAuthEndpoint().'2', $openIdConfig2['authorization_endpoint']);
+        $this->assertEquals($this->helper->getDefaultLogoutUrl().'2', $openIdConfig2['end_session_endpoint']);
+
+        // get openid config for new tenant, existing version
+        $this->azure->tenant = 'tenant2';
+        $openIdConfig3 = $this->azure->getTenantDetails('', '');
+
+        $this->assertEquals($this->helper->getDefaultIss().'3', $openIdConfig3['issuer']);
+        $this->assertEquals($this->helper->getDefaultAuthEndpoint().'3', $openIdConfig3['authorization_endpoint']);
+        $this->assertEquals($this->helper->getDefaultLogoutUrl().'3', $openIdConfig3['end_session_endpoint']);
+
+
+        // ensure old configs are still valid
+        $this->azure->tenant = 'tenant1';
+        $this->azure->defaultEndPointVersion = Azure::ENDPOINT_VERSION_1_0;
+        $openIdConfig1 = $this->azure->getTenantDetails('', '');
+
+        $this->assertEquals($this->helper->getDefaultIss(), $openIdConfig1['issuer']);
+        $this->assertEquals($this->helper->getDefaultAuthEndpoint(), $openIdConfig1['authorization_endpoint']);
+        $this->assertEquals($this->helper->getDefaultLogoutUrl(), $openIdConfig1['end_session_endpoint']);
+
+        $this->azure->defaultEndPointVersion = Azure::ENDPOINT_VERSION_2_0;
+        $openIdConfig2 = $this->azure->getTenantDetails('', '');
+
+        $this->assertEquals($this->helper->getDefaultIss().'2', $openIdConfig2['issuer']);
+        $this->assertEquals($this->helper->getDefaultAuthEndpoint().'2', $openIdConfig2['authorization_endpoint']);
+        $this->assertEquals($this->helper->getDefaultLogoutUrl().'2', $openIdConfig2['end_session_endpoint']);
+
     }
 
     /**
@@ -63,10 +111,9 @@ class AzureTest extends TestCase
     {
         $this->expectException(RuntimeException::class);
 
-        $this->setDefaultFakeData();
-        $this->azure = new Azure(['clientId' => 'invalid_client_id'], ['httpClient' => $this->getMockHttpClient()]);
+        $this->azure = new Azure(['clientId' => 'invalid_client_id'], ['httpClient' => $this->helper->getMockHttpClient()]);
 
-        $this->getAccessToken();
+        $this->helper->getAccessToken($this->azure);
     }
 
     /**
@@ -77,10 +124,10 @@ class AzureTest extends TestCase
         // This test is not working as expected. The exception is thrown in firebase/php-jwt/src/JWT.php:163 instead of Azure.php:357
         $this->expectException(RuntimeException::class);
 
-        $this->tokenFaker->setFakeData('b2cId', true, $this->defaultClientId, $this->defaultIss, time() - 99);
-        $this->azure = new Azure(['clientId' => $this->defaultClientId], ['httpClient' => $this->getMockHttpClient()]);
+        $this->helper->getTokenFaker()->setFakeData('b2cId', true, $this->helper->getDefaultClientId(), $this->helper->getDefaultIss(), time() - 99);
+        $this->azure = new Azure([], ['httpClient' => $this->helper->getMockHttpClient(false)]);
 
-        $this->getAccessToken();
+        $this->helper->getAccessToken($this->azure);
     }
 
     /**
@@ -91,10 +138,10 @@ class AzureTest extends TestCase
         // This test is not working as expected. The exception is thrown in firebase/php-jwt/src/JWT.php:147 instead of Azure.php:357
         $this->expectException(RuntimeException::class);
 
-        $this->tokenFaker->setFakeData('b2cId', true, $this->defaultClientId, $this->defaultIss, null, time() + 99);
-        $this->azure = new Azure(['clientId' => $this->defaultClientId], ['httpClient' => $this->getMockHttpClient()]);
+        $this->helper->getTokenFaker()->setFakeData('b2cId', true, $this->helper->getDefaultClientId(), $this->helper->getDefaultIss(), null, time() + 99);
+        $this->azure = new Azure([], ['httpClient' => $this->helper->getMockHttpClient(false)]);
 
-        $this->getAccessToken();
+        $this->helper->getAccessToken($this->azure);
     }
 
     /**
@@ -104,10 +151,10 @@ class AzureTest extends TestCase
     {
         $this->expectException(RuntimeException::class);
 
-        $this->tokenFaker->setFakeData('b2cId', true, $this->defaultClientId, 'invalid_issuer');
-        $this->azure = new Azure(['clientId' => $this->defaultClientId], ['httpClient' => $this->getMockHttpClient()]);
+        $this->helper->getTokenFaker()->setFakeData('b2cId', true, $this->helper->getDefaultClientId(), 'invalid_issuer');
+        $this->azure = new Azure([], ['httpClient' => $this->helper->getMockHttpClient(false)]);
 
-        $this->getAccessToken();
+        $this->helper->getAccessToken($this->azure);
     }
 
     /**
@@ -115,13 +162,12 @@ class AzureTest extends TestCase
      */
     public function it_correctly_sets_global_vars_in_constructor(): void
     {
-        $this->setDefaultFakeData();
         $defaultEndpointVersion = '2.0';
         $scope = ['openid'];
 
         $this->azure = new Azure(
             [
-                'clientId' => $this->defaultClientId,
+                'clientId' => $this->helper->getDefaultClientId(),
                 'scopes' => $scope,
                 'defaultEndPointVersion' => $defaultEndpointVersion,
             ]
@@ -136,10 +182,9 @@ class AzureTest extends TestCase
      */
     public function it_gets_base_authorization_url_from_config(): void
     {
-        $this->setDefaultFakeData();
-        $this->azure = new Azure(['clientId' => $this->defaultClientId], ['httpClient' => $this->getMockHttpClient()]);
+        $this->azure = new Azure([], ['httpClient' => $this->helper->getMockHttpClient()]);
 
-        $this->assertEquals($this->defaultAuthEndpoint, $this->azure->getBaseAuthorizationUrl());
+        $this->assertEquals($this->helper->getDefaultAuthEndpoint(), $this->azure->getBaseAuthorizationUrl());
     }
 
     /**
@@ -147,89 +192,11 @@ class AzureTest extends TestCase
      */
     public function it_gets_logout_url_from_config(): void
     {
-        $this->setDefaultFakeData();
-        $this->azure = new Azure(['clientId' => $this->defaultClientId], ['httpClient' => $this->getMockHttpClient()]);
+        $this->azure = new Azure([], ['httpClient' => $this->helper->getMockHttpClient()]);
         $post_logout_redirect_uri = 'post_logout_uri';
 
-        $this->assertEquals($this->defaultLogoutUrl, $this->azure->getLogoutUrl());
-        $this->assertEquals($this->defaultLogoutUrl .= '?post_logout_redirect_uri=' . rawurlencode($post_logout_redirect_uri), $this->azure->getLogoutUrl($post_logout_redirect_uri));
-    }
-
-    /**
-     * @test
-     */
-    public function it_creates_valid_access_token(): void
-    {
-        $this->setDefaultFakeData();
-        $this->azure = new Azure(['clientId' => $this->defaultClientId], ['httpClient' => $this->getMockHttpClient()]);
-
-        try {
-            /** @var AccessToken $token */
-            $token = $this->getAccessToken();
-        } catch (IdentityProviderException $e) {
-            $this->fail();
-        }
-
-        $this->assertNotNull($token->getToken());
-        $this->assertNotEmpty($token->getToken());
-
-        $this->assertNotNull($token->getIdToken());
-        $this->assertNotEmpty($token->getIdToken());
-
-        $this->assertNotNull($token->getIdTokenClaims());
-        $this->assertNotEmpty($token->getIdTokenClaims());
-    }
-
-    /**
-     * @test
-     */
-    public function it_correctly_serializes_the_access_token(): void
-    {
-        $this->setDefaultFakeData();
-        $this->azure = new Azure(['clientId' => $this->defaultClientId], ['httpClient' => $this->getMockHttpClient()]);
-
-        try {
-            /** @var AccessToken $token */
-            $token = $this->getAccessToken();
-        } catch (IdentityProviderException $e) {
-            $this->fail();
-        }
-
-        $serializedToken = $token->jsonSerialize();
-
-        $this->assertNotNull($serializedToken);
-        $this->assertNotEmpty($serializedToken);
-
-        $this->assertEquals($token->getIdToken(), $serializedToken['id_token']);
-    }
-
-    /**
-     * @test
-     */
-    public function it_creates_valid_resource_owner(): void
-    {
-        $this->setDefaultFakeData();
-        $this->azure = new Azure(['clientId' => $this->defaultClientId], ['httpClient' => $this->getMockHttpClient()]);
-
-        try {
-            /** @var AccessToken $token */
-            $token = $this->getAccessToken();
-        } catch (IdentityProviderException $e) {
-            $this->fail();
-        }
-
-        /** @var AzureResourceOwner $owner */
-        $owner = $this->azure->getResourceOwner($token);
-
-        $this->assertEquals($this->defaultIss, $owner->claim('iss'));
-        $this->assertEquals($this->defaultClientId, $owner->claim('aud'));
-
-        $this->assertNull($owner->getId());
-        $this->assertNull($owner->getFirstName());
-        $this->assertNull($owner->getLastName());
-        $this->assertNull($owner->getUpn());
-        $this->assertNull($owner->getTenantId());
-        $this->assertNotNull($owner->toArray());
+        $this->assertEquals($this->helper->getDefaultLogoutUrl(), $this->azure->getLogoutUrl());
+        $this->assertEquals($this->helper->getDefaultLogoutUrl() . '?post_logout_redirect_uri=' . rawurlencode($post_logout_redirect_uri), $this->azure->getLogoutUrl($post_logout_redirect_uri));
     }
 
     /**
@@ -237,22 +204,17 @@ class AzureTest extends TestCase
      */
     public function it_should_return_token_claims_on_successful_validation(): void
     {
-        $this->setDefaultFakeData();
-        $this->azure = new Azure(['clientId' => $this->defaultClientId], ['httpClient' => $this->getMockHttpClient()]);
+        $this->azure = new Azure(['clientId' => $this->helper->getDefaultClientId()], ['httpClient' => $this->helper->getMockHttpClient()]);
 
-        try {
-            /** @var AccessToken $token */
-            $token = $this->getAccessToken();
-        } catch (IdentityProviderException $e) {
-            $this->fail();
-        }
+        /** @var AccessToken $token */
+        $token = $this->helper->getAccessToken($this->azure);
 
-        $this->assertTrue(true);
+//        $this->assertTrue(true);
 
         // TODO: fix this test
-//        $claims = $this->azure->validateAccessToken($token);
-//        $this->assertEquals($this->defaultIss, $claims['iss']);
-//        $this->assertEquals($this->defaultClientId, $claims['aud']);
+        $claims = $this->azure->validateAccessToken($token);
+        $this->assertEquals($this->helper->getDefaultIss(), $claims['iss']);
+        $this->assertEquals($this->helper->$this->getDefaultClientId(), $claims['aud']);
     }
 
     /**
@@ -267,10 +229,9 @@ class AzureTest extends TestCase
         // TODO: remove
         $this->expectException(Exception::class);
 
-        $this->setDefaultFakeData();
-        $this->azure = new Azure(['clientId' => $this->defaultClientId], ['httpClient' => $this->getMockHttpClient(true, false)]);
+        $this->azure = new Azure([], ['httpClient' => $this->helper->getMockHttpClient(true, true, false)]);
 
-        $this->getAccessToken();
+        $this->helper->getAccessToken($this->azure);
     }
 
     /**
@@ -280,10 +241,9 @@ class AzureTest extends TestCase
     {
         $this->expectException(Exception::class);
 
-        $this->setDefaultFakeData();
-        $this->azure = new Azure(['clientId' => $this->defaultClientId], ['httpClient' => $this->getMockHttpClient(false, true)]);
+        $this->azure = new Azure([], ['httpClient' => $this->helper->getMockHttpClient(true, false, true)]);
 
-        $this->getAccessToken();
+        $this->helper->getAccessToken($this->azure);
     }
 
 
@@ -292,8 +252,7 @@ class AzureTest extends TestCase
      */
     public function it_should_correctly_set_grant(): void
     {
-        $this->setDefaultFakeData();
-        $this->azure = new Azure(['clientId' => $this->defaultClientId], ['httpClient' => $this->getMockHttpClient()]);
+        $this->azure = new Azure([], ['httpClient' => $this->helper->getMockHttpClient()]);
 
         $grantFactory = $this->azure->getGrantFactory();
         $grant = $grantFactory->getGrant('jwt_bearer');
@@ -305,68 +264,5 @@ class AzureTest extends TestCase
 
 
 
-    /**
-     * @return void
-     */
-    private function setDefaultFakeData(): void
-    {
-        $this->tokenFaker->setFakeData('b2cId', true, $this->defaultClientId, $this->defaultIss);
-    }
-
-    /**
-     * @return string[]
-     */
-    private function getConfig(): array
-    {
-        return array(
-            'issuer' => $this->defaultIss,
-            'authorization_endpoint' => $this->defaultAuthEndpoint,
-            'end_session_endpoint' => $this->defaultLogoutUrl,
-            'token_endpoint' => '',
-            'jwks_uri' => ''
-        );
-    }
-
-    /**
-     * @param bool $valid_token
-     * @param bool $valid_key
-     * @return MockHandler
-     */
-    private function getHandler(bool $valid_token, bool $valid_key): MockHandler
-    {
-        $config = $this->getConfig();
-        $tokenResponse = $valid_token ? $this->tokenFaker->getB2cTokenResponse() : [''];
-        $keyResponse = $valid_key ? $this->keysFaker->getB2cKeysResponse($this->tokenFaker->getPublicKey(), $this->tokenFaker->getModulus(), $this->tokenFaker->getExponent()) : ['keys' => [['']]];
-
-        return new MockHandler([
-            new Response(200, ['content-type' => 'application/json'], json_encode($config)),
-            new Response(200, ['content-type' => 'application/json'], json_encode($tokenResponse)),
-            new Response(200, ['content-type' => 'application/json'], json_encode($keyResponse)),
-            new Response(200, ['content-type' => 'application/json'], json_encode($config)),
-            new Response(200, ['content-type' => 'application/json'], json_encode($keyResponse)),
-        ]);
-    }
-
-
-    /**
-     * @param bool $valid_token
-     * @param bool $valid_key
-     * @return Client
-     */
-    private function getMockHttpClient(bool $valid_token = true, bool $valid_key = true): Client
-    {
-        return new Client(['handler' => $this->getHandler($valid_token, $valid_key)]);
-    }
-    /**
-     * @return AccessTokenInterface
-     * @throws IdentityProviderException
-     */
-    private function getAccessToken(): AccessTokenInterface
-    {
-        return $this->azure->getAccessToken('authorization_code', [
-            'scope' => $this->azure->scope,
-            'code' => 'authorization_code',
-        ]);
-    }
 
 }
