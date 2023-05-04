@@ -1,6 +1,6 @@
 <?php
 
-namespace TheNetworg\OAuth2\Client\Tests;
+namespace TheNetworg\OAuth2\Client\Tests\Provider;
 
 use Exception;
 use GuzzleHttp\Client;
