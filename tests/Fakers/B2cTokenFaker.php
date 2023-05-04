@@ -39,20 +39,20 @@ class B2cTokenFaker
      */
     public function setFakeData(
         string $b2cId,
-        bool $isSuccessful,
-        string $aud, string
-        $iss,
-        ?int $exp = null,
-        ?int $nbf = null
+        bool   $isSuccessful,
+        string $clientId,
+        string $issuer,
+        ?int   $expires = null,
+        ?int   $notBefore = null
     ): void
     {
         $this->fakeData = [
             'sub' => $b2cId,
             'is_b2c_successful' => $isSuccessful,
-            'aud' => $aud,
-            'iss' => $iss,
-            'exp' => $exp ?? time() + 3600, // expires in one hour
-            'nbf' => $nbf ?? time(),
+            'aud' => $clientId,
+            'iss' => $issuer,
+            'exp' => $expires ?? time() + 3600, // expires in one hour
+            'nbf' => $notBefore ?? time(),
         ];
     }
 
