@@ -238,7 +238,7 @@ class AzureTest extends TestCase
     {
         $this->expectException(Exception::class);
 
-        $this->azure = new Azure([], ['httpClient' => $this->helper->getMockHttpClient(true, false, true)]);
+        $this->azure = new Azure([], ['httpClient' => $this->helper->getMockHttpClient(true, false)]);
 
         $this->helper->getAccessToken($this->azure);
     }
