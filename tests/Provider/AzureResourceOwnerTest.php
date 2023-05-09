@@ -5,7 +5,7 @@ namespace TheNetworg\OAuth2\Client\Tests\Provider;
 use PHPUnit\Framework\TestCase;
 use TheNetworg\OAuth2\Client\Provider\Azure;
 use TheNetworg\OAuth2\Client\Provider\AzureResourceOwner;
-use TheNetworg\OAuth2\Client\Tests\Fakers\B2cKeysFaker;
+use TheNetworg\OAuth2\Client\Tests\Fakers\KeysFaker;
 use TheNetworg\OAuth2\Client\Tests\Fakers\B2cTokenFaker;
 use TheNetworg\OAuth2\Client\Tests\Helper\AzureHelper;
 use TheNetworg\OAuth2\Client\Token\AccessToken;
@@ -25,7 +25,7 @@ class AzureResourceOwnerTest extends TestCase
      */
     public function setup(): void
     {
-        $this->helper = new AzureHelper(new B2cTokenFaker(), new B2cKeysFaker());
+        $this->helper = new AzureHelper(new B2cTokenFaker(), new KeysFaker());
     }
 
 

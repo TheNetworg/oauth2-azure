@@ -8,7 +8,7 @@ use GuzzleHttp\Psr7\Response;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessTokenInterface;
 use TheNetworg\OAuth2\Client\Provider\Azure;
-use TheNetworg\OAuth2\Client\Tests\Fakers\B2cKeysFaker;
+use TheNetworg\OAuth2\Client\Tests\Fakers\KeysFaker;
 use TheNetworg\OAuth2\Client\Tests\Fakers\B2cTokenFaker;
 
 class AzureHelper
@@ -18,7 +18,7 @@ class AzureHelper
     /** @var B2cTokenFaker */
     private $tokenFaker;
 
-    /** @var B2cKeysFaker */
+    /** @var KeysFaker */
     private $keysFaker;
 
 
@@ -35,7 +35,7 @@ class AzureHelper
     /** @var string */
     private $defaultLogoutUrl;
 
-    public function __construct(B2cTokenFaker $tokenFaker, B2cKeysFaker $keysFaker)
+    public function __construct(B2cTokenFaker $tokenFaker, KeysFaker $keysFaker)
     {
         $this->tokenFaker = $tokenFaker;
         $this->keysFaker = $keysFaker;
@@ -81,7 +81,7 @@ class AzureHelper
         }
         $config = $this->getConfig();
         $tokenResponse = $valid_token ? $this->tokenFaker->getB2cTokenResponse() : [''];
-        $keyResponse = $valid_key ? $this->keysFaker->getB2cKeysResponse($this->tokenFaker->getPublicKey(), $this->tokenFaker->getModulus(), $this->tokenFaker->getExponent()) : ['keys' => [['']]];
+        $keyResponse = $valid_key ? $this->keysFaker->getKeysResponse($this->tokenFaker->getPublicKey(), $this->tokenFaker->getModulus(), $this->tokenFaker->getExponent()) : ['keys' => [['']]];
 
         return new MockHandler([
             new Response(200, ['content-type' => 'application/json'], json_encode($config)),
