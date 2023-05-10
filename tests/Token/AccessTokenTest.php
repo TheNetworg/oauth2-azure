@@ -32,7 +32,7 @@ class AccessTokenTest extends TestCase
      */
     public function it_passes_an_access_token(): void
     {
-        $this->azure = new Azure(['clientId' => $this->helper->getDefaultClientId()], ['httpClient' => $this->helper->getMockHttpClient()]);
+        $this->azure = new Azure(['clientId' => $this->helper->getDefaultClientId(), 'defaultAlgorithm' => 'RS256'], ['httpClient' => $this->helper->getMockHttpClient()]);
 
         /** @var AccessToken $token */
         $token = $this->helper->getAccessToken($this->azure);
@@ -52,7 +52,7 @@ class AccessTokenTest extends TestCase
      */
     public function it_correctly_serializes_the_access_token(): void
     {
-        $this->azure = new Azure(['clientId' => $this->helper->getDefaultClientId()], ['httpClient' => $this->helper->getMockHttpClient()]);
+        $this->azure = new Azure(['clientId' => $this->helper->getDefaultClientId(), 'defaultAlgorithm' => 'RS256'], ['httpClient' => $this->helper->getMockHttpClient()]);
 
         /** @var AccessToken $token */
         $token = $this->helper->getAccessToken($this->azure);

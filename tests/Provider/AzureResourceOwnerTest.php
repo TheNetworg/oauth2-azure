@@ -34,7 +34,7 @@ class AzureResourceOwnerTest extends TestCase
      */
     public function it_creates_valid_resource_owner(): void
     {
-        $this->azure = new Azure(['clientId' => $this->helper->getDefaultClientId()], ['httpClient' => $this->helper->getMockHttpClient()]);
+        $this->azure = new Azure(['clientId' => $this->helper->getDefaultClientId(), 'defaultAlgorithm' => 'RS256'], ['httpClient' => $this->helper->getMockHttpClient()]);
 
         /** @var AccessToken $token */
         $token = $this->helper->getAccessToken($this->azure);

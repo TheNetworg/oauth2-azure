@@ -201,7 +201,7 @@ class AzureTest extends TestCase
      */
     public function it_should_return_token_claims_on_successful_validation(): void
     {
-        $this->azure = new Azure(['clientId' => $this->helper->getDefaultClientId()], ['httpClient' => $this->helper->getMockHttpClient()]);
+        $this->azure = new Azure(['clientId' => $this->helper->getDefaultClientId(), 'defaultAlgorithm' => 'RS256'], ['httpClient' => $this->helper->getMockHttpClient()]);
 
         /** @var AccessToken $token */
         $token = $this->helper->getAccessToken($this->azure);
