@@ -178,7 +178,8 @@ class Azure extends AbstractProvider
      */
     public function getResourceOwnerDetailsUrl(\League\OAuth2\Client\Token\AccessToken $token): string
     {
-        return ''; // shouldn't that return such a URL?
+        $openIdConfiguration = $this->getOpenIdConfiguration($this->tenant, $this->defaultEndPointVersion);
+        return $openIdConfiguration['userinfo_endpoint'];
     }
 
     public function getObjects($tenant, $ref, &$accessToken, $headers = [])
