@@ -420,7 +420,12 @@ class Azure extends AbstractProvider
                     $keys[$keyinfo['kid']] = new Key($publicKey, 'RS256');
                 }
             } else if (isset($keyinfo['n']) && isset($keyinfo['e'])) {
-                $pkey_object = JWK::parseKey($keyinfo, $this->defaultAlgorithm);
+                $alg = $this->defaultAlgorithm;
+                if (is_null($alg) && isset($keyinfo['kty'])) {
+                    $alg = $keyinfo['kty'];
+                }
+
+                $pkey_object = JWK::parseKey($keyinfo, $alg);
 
                 if ($pkey_object === false) {
                     throw new \RuntimeException('An attempt to read a public key from a ' . $keyinfo['n'] . ' certificate failed.');
