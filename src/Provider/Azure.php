@@ -324,7 +324,9 @@ class Azure extends AbstractProvider
         $logoutUri = $openIdConfiguration['end_session_endpoint'];
 
         if (!empty($post_logout_redirect_uri)) {
-            $logoutUri .= '?post_logout_redirect_uri=' . rawurlencode($post_logout_redirect_uri);
+            $query = parse_url($logoutUri, PHP_URL_QUERY);
+            $logoutUri .= $query ? '&' : '?';
+            $logoutUri .= 'post_logout_redirect_uri=' . rawurlencode($post_logout_redirect_uri);
         }
 
         return $logoutUri;
