@@ -89,7 +89,7 @@ class Azure extends AbstractProvider
         if (!array_key_exists($version, $this->openIdConfiguration[$tenant])) {
             $versionInfix = $this->getVersionUriInfix($version);
 	          $openIdConfigurationUri = $this->urlLogin . $tenant . $versionInfix . '/.well-known/openid-configuration?appid=' . $this->clientId;
-            
+
             $factory = $this->getRequestFactory();
             $request = $factory->getRequestWithOptions(
                 'get',
@@ -372,7 +372,7 @@ class Azure extends AbstractProvider
         $version = array_key_exists('ver', $tokenClaims) ? $tokenClaims['ver'] : $this->defaultEndPointVersion;
         $tenant = $this->getTenantDetails($this->tenant, $version);
         if ($tokenClaims['iss'] != $tenant['issuer']) {
-            throw new \RuntimeException('Invalid token issuer (tokenClaims[iss]' . $tokenClaims['iss'] . ', tenant[issuer] ' . $tenant['issuer'] . ')!');
+            throw new \RuntimeException('Invalid token issuer (tokenClaims[iss] ' . $tokenClaims['iss'] . ', tenant[issuer] ' . $tenant['issuer'] . ')!');
         }
     }
 
@@ -468,7 +468,7 @@ class Azure extends AbstractProvider
      */
     public function getTenantDetails($tenant, $version)
     {
-        return $this->getOpenIdConfiguration($this->tenant, $this->defaultEndPointVersion);
+        return $this->getOpenIdConfiguration($this->tenant, $version);
     }
 
     /**
