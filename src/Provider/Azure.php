@@ -358,21 +358,21 @@ class Azure extends AbstractProvider
      */
     public function validateTokenClaims($tokenClaims) {
         if ($this->getClientId() != $tokenClaims['aud']) {
-            throw new \RuntimeException('The client_id / audience is invalid!');
+            throw new \RuntimeException('The audience claim of the token does not match the configured Client ID.');
         }
         if ($tokenClaims['nbf'] > time() + JWT::$leeway || $tokenClaims['exp'] < time() - JWT::$leeway) {
             // Additional validation is being performed in firebase/JWT itself
-            throw new \RuntimeException('The id_token is invalid!');
+            throw new \RuntimeException(sprintf('The token is not yet valid or has already expired. Verify whether your system clock is skewed, the current time is %s.', date('c')));
         }
 
-        if ('common' == $this->tenant) {
-            $this->tenant = $tokenClaims['tid'];
+        if ('common' === $this->tenant) {
+            $this->tenant = $tokenClaims['tid'] ?? null;
         }
 
         $version = array_key_exists('ver', $tokenClaims) ? $tokenClaims['ver'] : $this->defaultEndPointVersion;
         $tenant = $this->getTenantDetails($this->tenant, $version);
         if ($tokenClaims['iss'] != $tenant['issuer']) {
-            throw new \RuntimeException('Invalid token issuer (tokenClaims[iss]' . $tokenClaims['iss'] . ', tenant[issuer] ' . $tenant['issuer'] . ')!');
+            throw new \RuntimeException(sprintf('The token issuer "%s" does not match the tenant configuration of "%s".', $tokenClaims['iss'], $tenant['issuer']));
         }
     }
 
