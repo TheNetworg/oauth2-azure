@@ -89,7 +89,7 @@ class Azure extends AbstractProvider
         if (!array_key_exists($version, $this->openIdConfiguration[$tenant])) {
             $versionInfix = $this->getVersionUriInfix($version);
 	          $openIdConfigurationUri = $this->urlLogin . $tenant . $versionInfix . '/.well-known/openid-configuration?appid=' . $this->clientId;
-            
+
             $factory = $this->getRequestFactory();
             $request = $factory->getRequestWithOptions(
                 'get',
@@ -161,6 +161,11 @@ class Azure extends AbstractProvider
                 $options['resource'] = $this->resource ? $this->resource : $this->urlAPI;
             }
         }
+
+        if (empty($options['scope'])) {
+            $options['scope'] = $this->getDefaultScopes();
+        }
+
         return parent::getAccessToken($grant, $options);
     }
 
