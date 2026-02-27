@@ -5,6 +5,7 @@ namespace TheNetworg\OAuth2\Client\Token;
 use Firebase\JWT\JWT;
 use RuntimeException;
 use TheNetworg\OAuth2\Client\Provider\Azure;
+use Exception;
 
 class AccessToken extends \League\OAuth2\Client\Token\AccessToken
 {
@@ -39,7 +40,7 @@ class AccessToken extends \League\OAuth2\Client\Token\AccessToken
                     // Then parse the idToken claims only without validating the signature
                     $idTokenClaims = (array)JWT::jsonDecode(JWT::urlsafeB64Decode($tks[1]));
                 }
-            } catch (JWT_Exception $e) {
+            } catch (Exception $e) {
                 throw new RuntimeException('Unable to parse the id_token!');
             }
 
