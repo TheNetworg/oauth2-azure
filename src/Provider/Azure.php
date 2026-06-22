@@ -37,11 +37,11 @@ class Azure extends AbstractProvider
 
     public $defaultEndPointVersion = self::ENDPOINT_VERSION_1_0;
 
-    public $urlAPI = 'https://graph.windows.net/';
+    public $urlAPI = 'https://graph.microsoft.com/';
 
     public $resource = '';
 
-    public $API_VERSION = '1.6';
+    public $API_VERSION = 'v1.0';
 
     public $authWithResource = true;
 
@@ -282,17 +282,14 @@ class Azure extends AbstractProvider
         if (false !== filter_var($ref, FILTER_VALIDATE_URL)) {
             $url = $ref;
         } else {
-            if (false !== strpos($this->urlAPI, 'graph.windows.net')) {
+            if (false !== strpos($this->urlAPI, 'graph.microsoft.com')) {
                 $tenant = 'common';
                 if (property_exists($this, 'tenant')) {
                     $tenant = $this->tenant;
                 }
                 $ref = "$tenant/$ref";
 
-                $url = $this->urlAPI . $ref;
-
-                $url .= (false === strrpos($url, '?')) ? '?' : '&';
-                $url .= 'api-version=' . $this->API_VERSION;
+                $url = $this->urlAPI . $this->API_VERSION . '/' . $ref;
             } else {
                 $url = $this->urlAPI . $ref;
             }
